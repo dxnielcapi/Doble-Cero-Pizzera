@@ -1,0 +1,371 @@
+---
+/**
+ * Cortina de entrada — Doble Cero
+ *
+ * Tres tiempos, sin nada más en pantalla:
+ *
+ *   1. Crema vacío. Es el hueco donde se descargan los recortes; no se muestra
+ *      progreso ni texto de ningún tipo.
+ *   2. Los recortes de `assets_intro` caen como lluvia —cada uno con su propio
+ *      retraso, velocidad y ladeo— hasta tapar el viewport, y se quedan
+ *      quietos un segundo.
+ *   3. Vuelven a caer, también desacompasados, y descubren el hero.
+ *
+ * La coreografía se calcula aquí, en el servidor, y viaja en `data-ritmo`: así
+ * el desorden es el mismo en cada carga y el script solo tiene que ejecutarlo.
+ *
+ * Al terminar emite `intro:listo` en `document`: ahí engancha la animación del
+ * hero (docs/animacion-hero-spec.md).
+ */
+
+const PIZZAS = [
+  'pizza_1.webp',
+  'pizza_2.webp',
+  'pizza_3.webp',
+  'pizza_4.webp',
+  'pizza_5.webp',
+  'pizza_6.webp',
+  'pizza_7.webp',
+];
+
+const LOGOTIPOS = ['pizza_8.webp', 'pizza_9.webp', 'pizza_10.webp'];
+
+const CASILLAS = 20;
+
+/** Ruido reproducible en [0,1). Solo corre en el servidor. */
+function azar(semilla: number, canal: number) {
+  const n = Math.sin(semilla * 12.9898 + canal * 78.233) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+const entre = (v: number, min: number, max: number) => min + v * (max - min);
+
+/** Coloca una pieza: dónde reposa y cómo cae. */
+function pieza(semilla: number, src: string) {
+  return {
+    src,
+    // Reposo: pequeño desorden para que la retícula no se lea como retícula.
+    giro: entre(azar(semilla, 1), -6, 6),
+    dx: entre(azar(semilla, 2), -10, 10),
+    dy: entre(azar(semilla, 3), -8, 8),
+    // El recorrido de entrada no se sortea: lo mide el script, porque depende
+    // de a qué altura reposa cada pieza. Aquí solo va el desorden que se le
+    // suma encima.
+    ritmo: {
+      sobra: Math.round(entre(azar(semilla, 4), 5, 35)), // vh de más, sobre el mínimo
+      entraEn: Math.round(entre(azar(semilla, 5), 0, 360)),
+      entraPaso: Number(entre(azar(semilla, 6), 0.9, 1.12).toFixed(3)), // roza la velocidad
+      entraGiro: Math.round(entre(azar(semilla, 7), -8, 8)),
+      saleEn: Math.round(entre(azar(semilla, 8), 0, 320)),
+      saleDura: Math.round(entre(azar(semilla, 9), 780, 1020)),
+      saleGiro: Math.round(entre(azar(semilla, 10), -9, 9)),
+    },
+  };
+}
+
+// Capa base: las siete pizzas, que son las que tapan.
+const base = Array.from({ length: CASILLAS }, (_, i) => pieza(i + 1, PIZZAS[i % PIZZAS.length]));
+
+// Capa de relleno: los tres logotipos repetidos, media casilla desplazados. Caen
+// en los cruces de la retícula, que es exactamente donde el empaquetado de
+// recortes redondos deja hueco.
+// Lleva una columna más que la base —y por tanto más casillas— para no
+// quedarse corta por el lado hacia el que se desplaza.
+const relleno = Array.from({ length: CASILLAS + 10 }, (_, i) =>
+  pieza(i + 101, LOGOTIPOS[i % LOGOTIPOS.length]),
+);
+---
+
+<div id="intro" class="cortina" aria-hidden="true">
+  <div class="cortina__fondo"></div>
+  {
+    [
+      { piezas: relleno, modificador: 'relleno' },
+      { piezas: base, modificador: 'base' },
+    ].map(({ piezas, modificador }) => (
+      <div class:list={['cortina__rejilla', `cortina__rejilla--${modificador}`]}>
+        {piezas.map(({ src, giro, dx, dy, ritmo }) => (
+          <span class="cortina__casilla" data-ritmo={JSON.stringify(ritmo)}>
+            <img
+              class="cortina__pieza"
+              src={`/assets_intro/derived/${src}`}
+              alt=""
+              decoding="async"
+              fetchpriority="high"
+              style={`--giro:${giro.toFixed(2)}deg;--dx:${dx.toFixed(1)}%;--dy:${dy.toFixed(1)}%`}
+            />
+          </span>
+        ))}
+      </div>
+    ))
+  }
+</div>
+
+<noscript>
+  <style>
+    /* Sin JS la cortina no puede animarse ni retirarse, y nadie devolvería el
+       scroll ni descubriría el contenido. Se descarta entera y la página queda
+       utilizable. */
+    #intro {
+      display: none;
+    }
+
+    html.esta-cargando,
+    html.esta-cargando body {
+      overflow: visible;
+    }
+
+    html.intro-vacio body > *:not(#intro) {
+      visibility: visible;
+    }
+  </style>
+</noscript>
+
+<style>
+  .cortina {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* Fondo de la cortina, en su propia capa para poder apagarlo al empezar la
+     salida: a partir de ahí lo que hay detrás es el hero, y las piezas que aún
+     caen lo van destapando. */
+  .cortina__fondo {
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-crema);
+  }
+
+  /* La retícula desborda el viewport por los cuatro lados: así los giros de las
+     piezas del borde no dejan ver la esquina. */
+  .cortina__rejilla {
+    --columnas: 4;
+    /* `--ancho` debe seguir a `inset`: 100vw + 12% por cada lado. */
+    --ancho: 124vw;
+    --celda: calc(var(--ancho) / var(--columnas));
+    --paso-fila: calc(var(--celda) * 0.66);
+
+    position: absolute;
+    inset: -12%;
+    display: grid;
+    grid-template-columns: repeat(var(--columnas), 1fr);
+    /* Filas más juntas que anchas: es el solape vertical lo que sella la trama. */
+    grid-auto-rows: var(--paso-fila);
+  }
+
+  /* Media casilla en los dos ejes: los logotipos quedan en los cruces. Al
+     desplazarse pierde cobertura por la derecha y por abajo, así que lleva una
+     columna de más y casillas de ancho fijo; lo que sobra lo recorta la
+     cortina. */
+  .cortina__rejilla--relleno {
+    grid-template-columns: repeat(calc(var(--columnas) + 1), var(--celda));
+    transform: translate(calc(var(--celda) / -2), calc(var(--paso-fila) / -2));
+  }
+
+  /* En vertical, cuatro columnas dejarían piezas diminutas. */
+  @media (orientation: portrait) {
+    .cortina__rejilla {
+      --columnas: 2;
+    }
+  }
+
+  /* La casilla lleva la caída; la pieza, su postura en reposo. Separarlas evita
+     tener que recomponer el giro y el desplazamiento en cada fotograma.
+
+     Parte fuera de cuadro, y bien lejos: mientras dura el crema en blanco las
+     animaciones todavía no existen, así que sin esto la retícula se vería
+     montada y tapando la pantalla desde el primer fotograma. */
+  .cortina__casilla {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    transform: translate3d(0, -250vh, 0);
+  }
+
+  /* Cada pieza desborda su casilla: es ese solape —y no el número de piezas—
+     lo que cierra los huecos entre recortes redondos. */
+  .cortina__pieza {
+    width: calc(var(--celda) * 2);
+    height: auto;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--giro));
+  }
+
+  /* Los logotipos son manchas anchas y bajas; solo tienen que tapar el rombo
+     que dejan cuatro pizzas, así que van algo más pequeños. */
+  .cortina__rejilla--relleno .cortina__pieza {
+    width: calc(var(--celda) * 1.5);
+  }
+</style>
+
+<script>
+  interface Ritmo {
+    sobra: number;
+    entraEn: number;
+    entraPaso: number;
+    entraGiro: number;
+    saleEn: number;
+    saleDura: number;
+    saleGiro: number;
+  }
+
+  const raiz = document.documentElement;
+  const cortina = document.getElementById('intro');
+
+  if (cortina) {
+    const VACIO = 1000; // el crema en blanco del arranque, antes de la lluvia
+    const QUIETUD = 1000; // el segundo tapado que pide el guion
+    const APAGADO = 320; // lo que tarda el fondo de la cortina en irse
+    const ESPERA_MAX = 6000; // techo: si la red falla, la cortina corre igual
+    const CAIDA_PATRON = 850; // ms en recorrer una pantalla de alto
+
+    // Frenada larga al posarse y arranque sin tirón al irse. Las dos curvas
+    // evitan el pico de velocidad inicial, que es lo que se notaba brusco.
+    const CURVA_ENTRADA = 'cubic-bezier(0.33, 1, 0.68, 1)';
+    const CURVA_SALIDA = 'cubic-bezier(0.4, 0, 0.75, 0.3)';
+
+    const menosMovimiento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const imagenes = [...cortina.querySelectorAll('img')];
+    const casillas = [...cortina.querySelectorAll<HTMLElement>('.cortina__casilla')];
+    const fondo = cortina.querySelector<HTMLElement>('.cortina__fondo');
+
+    const pausa = (ms: number) => new Promise((listo) => setTimeout(listo, ms));
+
+    const ritmoDe = (casilla: HTMLElement): Ritmo => JSON.parse(casilla.dataset.ritmo!);
+
+    /** Todas las piezas decodificadas, o el tiempo agotado. */
+    function listasOTiempo() {
+      const decodificadas = Promise.all(imagenes.map((img) => img.decode().catch(() => undefined)));
+      return Promise.race([decodificadas, pausa(ESPERA_MAX)]);
+    }
+
+    /**
+     * Anima cada casilla por separado y espera a la última. Con la Web
+     * Animations API cada pieza lleva su propio reloj, que es lo que hace que
+     * la caída se lea como lluvia y no como una sola imagen bajando.
+     */
+    function llover(
+      fases: (ritmo: Ritmo, casilla: HTMLElement) => [Keyframe[], KeyframeAnimationOptions],
+    ) {
+      // Primero se resuelven todos los planes (que pueden medir) y después se
+      // lanzan las animaciones, para no intercalar lecturas y escrituras de
+      // layout.
+      const planes = casillas.map((casilla) => fases(ritmoDe(casilla), casilla));
+
+      return Promise.all(
+        casillas.map((casilla, i) => {
+          const [fotogramas, opciones] = planes[i];
+          // `both`: durante su retraso la pieza ya se planta en el primer
+          // fotograma, en vez de asomar en la posición de reposo del CSS.
+          return casilla.animate(fotogramas, { fill: 'both', ...opciones }).finished;
+        }),
+      );
+    }
+
+    /**
+     * Cuánto hay que subir una pieza para dejarla justo por encima del borde
+     * superior de la pantalla.
+     *
+     * No vale una altura fija: una pieza de la última fila reposa a una pantalla
+     * de distancia del borde, así que con el mismo salto que una de la primera
+     * empezaría ya dentro del cuadro —y se vería nacer a media altura en vez de
+     * entrar por arriba—.
+     */
+    function alturaDeSalida(casilla: HTMLElement) {
+      const rejilla = casilla.parentElement!;
+      const imagen = casilla.querySelector('img')!;
+
+      // `offsetTop` es posición de layout, así que el aparcado de la casilla no
+      // la altera; la caja de la rejilla sí recoge el desplazamiento de media
+      // casilla de la capa de relleno.
+      const centro =
+        rejilla.getBoundingClientRect().top + casilla.offsetTop + casilla.offsetHeight / 2;
+
+      // El giro y el desplazamiento de reposo agrandan el rectángulo real.
+      const holgura = imagen.offsetWidth * 0.12 + 24;
+
+      return centro + imagen.offsetHeight / 2 + holgura;
+    }
+
+    const caer = () =>
+      llover((r, casilla) => {
+        const recorrido = alturaDeSalida(casilla) + (r.sobra * innerHeight) / 100;
+        // Raíz del recorrido, no proporcional: las piezas de abajo tardan algo
+        // más —caen desde más lejos— sin descolgarse del resto.
+        const duracion = Math.round(
+          CAIDA_PATRON * Math.sqrt(recorrido / innerHeight) * r.entraPaso,
+        );
+
+        return [
+          [
+            { transform: `translate3d(0, ${-Math.round(recorrido)}px, 0) rotate(${r.entraGiro}deg)` },
+            { transform: 'translate3d(0, 0, 0) rotate(0deg)' },
+          ],
+          { duration: duracion, delay: r.entraEn, easing: CURVA_ENTRADA },
+        ];
+      });
+
+    const irse = () =>
+      llover((r) => [
+        [
+          { transform: 'translate3d(0, 0, 0) rotate(0deg)' },
+          { transform: `translate3d(0, 125vh, 0) rotate(${r.saleGiro}deg)` },
+        ],
+        { duration: r.saleDura, delay: r.saleEn, easing: CURVA_SALIDA },
+      ]);
+
+    /** Devuelve el contenido de la página. Debe llamarse con la pantalla tapada. */
+    function descubrir() {
+      raiz.classList.remove('intro-vacio');
+    }
+
+    function terminar() {
+      descubrir();
+      raiz.classList.remove('esta-cargando');
+      document.dispatchEvent(new CustomEvent('intro:listo'));
+      cortina!.remove();
+    }
+
+    async function correr() {
+      // El crema vacío dura lo que tarden los recortes, pero nunca menos de
+      // `VACIO`: si vienen de caché la pantalla se queda igualmente en blanco
+      // ese segundo, en vez de arrancar la lluvia de golpe.
+      await Promise.all([listasOTiempo(), pausa(VACIO)]);
+
+      if (menosMovimiento) {
+        terminar();
+        return;
+      }
+
+      await caer();
+      await pausa(QUIETUD);
+
+      // Con la pantalla aún tapada: se monta el hero detrás y se apaga el fondo
+      // de la cortina, para que sean las piezas al caer las que lo descubran.
+      descubrir();
+      fondo?.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: APAGADO,
+        easing: 'linear',
+        fill: 'forwards',
+      });
+
+      await irse();
+
+      terminar();
+    }
+
+    void correr();
+
+    // Los originales a resolución completa los necesita el hero, no la cortina:
+    // se piden aparte para no retrasar la animación.
+    addEventListener('load', () => {
+      for (const imagen of imagenes) {
+        const url = imagen.getAttribute('src')!.replace('/derived/', '/');
+        fetch(url, { priority: 'low' } as RequestInit).catch(() => {});
+      }
+    });
+  }
+</script>

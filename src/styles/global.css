@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Paleta
+   Muestreada de los recortes de `public/assets_intro/`: crema del papel, rojo
+   y verde de las aureolas, oro de las tramas. La spec del hero pide azul
+   cobalto como acento, pero las imágenes fuente están impresas en rojo/verde;
+   se manda el material.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-crema: #f6e9c8;
+  --color-crema-hondo: #ecdbb2;
+  --color-tinta: #1b120c;
+  --color-rojo: #e01b13;
+  --color-verde: #1d3320;
+  --color-oro: #c08a2b;
+
+  --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+}
+
+html {
+  background-color: var(--color-crema);
+}
+
+/* El scroll queda bloqueado mientras la cortina de entrada está montada. La
+   clase la pone el servidor y la quita el script al terminar. */
+html.esta-cargando,
+html.esta-cargando body {
+  overflow: hidden;
+}
+
+/* Antes de que la cortina baje no hay nada en pantalla: solo el crema. El
+   contenido se descubre con la pantalla ya tapada, así que nadie lo ve
+   aparecer. `visibility` en vez de `display` para no rehacer el layout justo
+   en mitad de la animación. */
+html.intro-vacio body > *:not(#intro) {
+  visibility: hidden;
+}

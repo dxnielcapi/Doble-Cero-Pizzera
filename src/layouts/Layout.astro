@@ -1,0 +1,52 @@
+---
+import '../styles/global.css';
+import Intro from '../components/Intro.astro';
+
+interface Props {
+	title?: string;
+	description?: string;
+	/** La cortina de entrada solo tiene sentido en la portada. */
+	intro?: boolean;
+}
+
+const {
+	title = 'Doble Cero — Pizzería',
+	description = 'Menú de la pizzería Doble Cero.',
+	intro = false,
+} = Astro.props;
+
+// La cortina no puede empezar a moverse hasta tener sus recortes: se piden
+// junto al HTML para acortar todo lo posible el crema en blanco del principio.
+const PIEZAS = Array.from({ length: 10 }, (_, i) => `/assets_intro/derived/pizza_${i + 1}.webp`);
+---
+
+<!doctype html>
+<html lang="es" class={intro ? 'esta-cargando intro-vacio' : undefined}>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#f6e9c8" />
+		<title>{title}</title>
+
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&display=swap"
+		/>
+
+		{
+			intro &&
+				PIEZAS.map((href) => (
+					<link rel="preload" as="image" href={href} fetchpriority="high" />
+				))
+		}
+	</head>
+	<body class="min-h-screen bg-crema text-tinta antialiased">
+		{intro && <Intro />}
+		<slot />
+	</body>
+</html>
