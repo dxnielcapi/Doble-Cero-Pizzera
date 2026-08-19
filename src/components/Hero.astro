@@ -1,0 +1,176 @@
+---
+/**
+ * Hero — Doble Cero
+ *
+ * Portada del menú, montada sobre la referencia de dirección de arte:
+ *
+ *   1. Titular gigante en rojo, con un párrafo centrado debajo.
+ *   2. Una pieza principal a lo ancho.
+ *   3. Un bloque de recomendaciones con tres piezas en fila.
+ *
+ * La foto de fondo solo cubre el primer tramo —titular, párrafo y pieza
+ * principal—; a partir de las recomendaciones el fondo es el crema plano de la
+ * página. El corte no está medido a mano: la foto es el fondo de `__cabecera`,
+ * así que termina exactamente donde termina ese bloque.
+ *
+ * Los textos son lorem ipsum y las imágenes, bloques de color: la maqueta va
+ * primero y el material entra después sin tocar el layout.
+ */
+
+const RECOMENDACIONES = ['Imagen 2', 'Imagen 3', 'Imagen 4'];
+
+const RESENA =
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod ' +
+  'tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, ' +
+  'quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo ' +
+  'consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse.';
+---
+
+<section class="hero">
+  <div class="hero__cabecera">
+    <div class="hero__ancho">
+      <h1 class="hero__titular">Menu</h1>
+      <p class="hero__resena">{RESENA}</p>
+
+      <div class="hero__marcador hero__marcador--principal">
+        <span class="hero__etiqueta">Imagen 1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero__recomendaciones">
+    <div class="hero__ancho">
+      <h2 class="hero__rotulo">Nuestras recomendaciones</h2>
+
+      <ul class="hero__fila">
+        {
+          RECOMENDACIONES.map((etiqueta) => (
+            <li class="hero__marcador">
+              <span class="hero__etiqueta">{etiqueta}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    --hueco: clamp(1.5rem, 2.6vw, 3rem);
+    --marcador: #a3a3a3;
+  }
+
+  /* Caja común: fija el ancho útil y los márgenes laterales de todo el hero,
+     para que la pieza principal y las recomendaciones compartan eje. */
+  .hero__ancho {
+    margin-inline: auto;
+    max-width: 110rem;
+    padding-inline: clamp(1rem, 2.4vw, 2.75rem);
+  }
+
+  /* Primer tramo: el único que lleva foto.
+
+     El velo de crema por encima cumple dos funciones —rebaja la foto al lavado
+     de la referencia y le devuelve contraste al párrafo, que en rojo sobre la
+     textura de la pizza no se leía—. Va en el mismo `background` que la imagen
+     para no montar una capa aparte. */
+  .hero__cabecera {
+    min-height: 100svh;
+    padding-block: clamp(2rem, 5vh, 4.5rem) clamp(2.5rem, 6vh, 5.5rem);
+    background-image:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-crema) 62%, transparent) 0%,
+        color-mix(in srgb, var(--color-crema) 42%, transparent) 40%,
+        color-mix(in srgb, var(--color-crema) 30%, transparent) 100%
+      ),
+      url('/Hero/Background.jpg');
+    background-position: center;
+    background-size: cover;
+  }
+
+  .hero__titular {
+    margin: 0;
+    color: var(--color-rojo);
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 19vw, 21rem);
+    font-weight: 900;
+    line-height: 0.86;
+    letter-spacing: -0.02em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .hero__resena {
+    margin: clamp(0.75rem, 1.6vw, 1.5rem) auto 0;
+    max-width: min(64rem, 100%);
+    color: var(--color-rojo);
+    font-size: clamp(0.8125rem, 1.15vw, 1.1875rem);
+    font-weight: 600;
+    line-height: 1.55;
+    text-align: center;
+    text-wrap: pretty;
+  }
+
+  /* Hueco de imagen. Mientras no haya material es un bloque de color con su
+     etiqueta; al llegar la foto solo cambia el contenido, no la caja. */
+  .hero__marcador {
+    display: flex;
+    align-items: flex-start;
+    padding: clamp(0.5rem, 1.4vw, 1.25rem) clamp(0.75rem, 1.8vw, 1.75rem);
+    background-color: var(--marcador);
+    aspect-ratio: 9 / 10;
+  }
+
+  .hero__marcador--principal {
+    margin-top: clamp(1.75rem, 4vw, 3.5rem);
+    aspect-ratio: 5 / 2;
+  }
+
+  .hero__etiqueta {
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 3vw, 3.25rem);
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  /* Segundo tramo: sin foto. El crema sale del `body`, así que el corte con la
+     cabecera queda a filo. */
+  .hero__recomendaciones {
+    padding-block: clamp(2rem, 4.5vw, 3.75rem) clamp(3rem, 7vw, 6rem);
+  }
+
+  .hero__rotulo {
+    margin: 0 0 clamp(1.25rem, 2.6vw, 2.5rem);
+    color: var(--color-tinta);
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3.4vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    text-align: center;
+  }
+
+  .hero__fila {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--hueco);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A tres columnas las piezas quedan en tiras demasiado estrechas para leerse
+     como imagen: por debajo del pliegue se apilan. */
+  @media (width < 48rem) {
+    .hero__fila {
+      grid-template-columns: 1fr;
+    }
+
+    .hero__marcador {
+      aspect-ratio: 4 / 3;
+    }
+  }
+</style>
