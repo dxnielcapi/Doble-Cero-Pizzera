@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Intro from '../components/Intro.astro';
+import Barra from '../components/Barra.astro';
 
 interface Props {
 	title?: string;
@@ -31,12 +32,19 @@ const PIEZAS = Array.from({ length: 10 }, (_, i) => `/assets_intro/derived/pizza
 		<meta name="theme-color" content="#f6e9c8" />
 		<title>{title}</title>
 
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link
-			rel="stylesheet"
-			href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&display=swap"
-		/>
+		{/* En línea y en el `<head>` a propósito: marca la raíz antes del primer
+		pintado, así el contenido con `data-aparece` nunca llega a verse antes de
+		esconderse. Un script diferido llegaría tarde y se vería el parpadeo. */}
+		<script is:inline>
+			document.documentElement.classList.add('con-aparicion');
+		</script>
+
+		{/* Coolvetica va autoalojada (ver `global.css`): se acabaron los viajes a
+		Google Fonts. Se precarga porque la usa el titular del hero, que es lo
+		primero que aparece al retirarse la cortina. `crossorigin` es obligatorio
+		en el preload de fuentes aunque sean del mismo origen; sin él el navegador
+		la descarga dos veces. */}
+		<link rel="preload" as="font" type="font/woff2" href="/fonts/coolvetica.woff2" crossorigin />
 
 		{
 			intro &&
@@ -47,6 +55,47 @@ const PIEZAS = Array.from({ length: 10 }, (_, i) => `/assets_intro/derived/pizza
 	</head>
 	<body class="min-h-screen bg-crema text-tinta antialiased">
 		{intro && <Intro />}
+		<Barra />
 		<slot />
+
+		<script>
+			// Revelado por scroll. Solo toca el atributo: el aspecto lo decide el
+			// CSS (ver `global.css`), y cada componente ajusta su entrada con
+			// `--entrada` / `--reposo`.
+			const raiz = document.documentElement;
+			const objetivos = [...document.querySelectorAll<HTMLElement>('[data-aparece]')];
+			const marcar = (el: HTMLElement) => el.setAttribute('data-aparece', 'dentro');
+
+			if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+				objetivos.forEach(marcar);
+			} else {
+				// Una sola vez por elemento: al volver a subir no se rebobina, que
+				// releer la página con todo parpadeando cansa.
+				const mirador = new IntersectionObserver(
+					(entradas) => {
+						for (const entrada of entradas) {
+							if (!entrada.isIntersecting) continue;
+							marcar(entrada.target as HTMLElement);
+							mirador.unobserve(entrada.target);
+						}
+					},
+					// Pide un poco más que asomar: si no, lo de la primera pantalla se
+					// revela antes de que nadie lo esté mirando.
+					{ rootMargin: '0px 0px -12% 0px', threshold: 0.15 },
+				);
+
+				const arrancar = () => objetivos.forEach((el) => mirador.observe(el));
+
+				// La cortina tapa la pantalla y deja el contenido en `visibility:
+				// hidden`, que sigue contando como visible para el observador. Sin
+				// esperar, la primera pantalla se desvanecería a puerta cerrada y
+				// aparecería ya entera.
+				if (raiz.classList.contains('esta-cargando')) {
+					document.addEventListener('intro:listo', arrancar, { once: true });
+				} else {
+					arrancar();
+				}
+			}
+		</script>
 	</body>
 </html>

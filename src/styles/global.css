@@ -1,6 +1,25 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
+   Tipografía
+   Coolvetica no está en Google Fonts, así que va autoalojada desde
+   `public/fonts/`. El archivo se convirtió a WOFF2 desde el OTF original
+   (67 KB -> 40 KB).
+
+   Solo hay un grosor. El rango `100 900` es mentira, pero es deliberada: sin
+   él, el navegador se inventa una negrita falsa en cuanto el CSS pide 800 o
+   900 —y el hero los pide—. Declarando el rango entero, cualquier peso resuelve
+   a este mismo archivo y nadie sintetiza nada.
+--------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Coolvetica";
+  src: url("/fonts/coolvetica.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------------------
    Paleta
    Muestreada de los recortes de `public/assets_intro/`: crema del papel, rojo
    y verde de las aureolas, oro de las tramas. La spec del hero pide azul
@@ -15,11 +34,69 @@
   --color-verde: #1d3320;
   --color-oro: #c08a2b;
 
-  --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Coolvetica", "Segoe UI", system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+   Medidas compartidas
+   El alto de la barra fija no puede vivir dentro de su componente: el hero lo
+   necesita para empezar por debajo de ella en vez de quedarse tapado.
+--------------------------------------------------------------------------- */
+:root {
+  --altura-barra: clamp(2.75rem, 4vw, 3.75rem);
 }
 
 html {
   background-color: var(--color-crema);
+  /* Los saltos con ancla tienen que caer por debajo de la barra. */
+  scroll-padding-block-start: var(--altura-barra);
+}
+
+/* La referencia está compuesta entera en una sola familia, no solo los
+   titulares. */
+body {
+  font-family: var(--font-display);
+}
+
+/* ---------------------------------------------------------------------------
+   Aparición al entrar en pantalla
+
+   Cualquier elemento con `data-aparece` arranca invisible y se revela cuando el
+   scroll lo alcanza. El script solo cambia el atributo a `dentro`; el viaje lo
+   describe el CSS.
+
+   El estado de partida vive tras `html.con-aparicion`, y esa clase la pone un
+   script en línea del `<head>` antes del primer pintado. Es a propósito: si el
+   ocultado fuera incondicional, sin JS el contenido se quedaría invisible para
+   siempre; y si la clase la pusiera el script diferido, se vería el contenido
+   un instante antes de desaparecer.
+
+   Cada elemento elige de dónde entra con `--entrada` y dónde reposa con
+   `--reposo`. Los textos se conforman con los valores por defecto; las estampas
+   necesitan `--reposo` porque su postura final lleva giro propio.
+--------------------------------------------------------------------------- */
+html.con-aparicion [data-aparece] {
+  opacity: 0;
+  transform: var(--entrada, translateY(1.25rem));
+  transition:
+    opacity 700ms ease,
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--retardo, 0ms);
+}
+
+html.con-aparicion [data-aparece="dentro"] {
+  opacity: 1;
+  transform: var(--reposo, none);
+}
+
+/* Quien no quiere movimiento no lo tiene: el script marca todo como visto de
+   una vez, y aquí se apaga cualquier resto de transición. */
+@media (prefers-reduced-motion: reduce) {
+  html.con-aparicion [data-aparece] {
+    opacity: 1;
+    transform: var(--reposo, none);
+    transition: none;
+  }
 }
 
 /* El scroll queda bloqueado mientras la cortina de entrada está montada. La
