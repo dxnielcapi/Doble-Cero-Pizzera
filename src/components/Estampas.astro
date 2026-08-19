@@ -1,0 +1,110 @@
+---
+/**
+ * Estampas — Doble Cero
+ *
+ * Los logotipos de `assets_intro` repartidos por los bordes de la página, como
+ * pegatinas pegadas a mano: cada una asoma por su lado, ladeada y a medio salir
+ * del encuadre.
+ *
+ * El reparto se sortea aquí, en el servidor, con el mismo ruido reproducible
+ * que usa la cortina. Es deliberado que no sea aleatorio en cada carga: así el
+ * desorden es idéntico siempre y no hay diferencia entre lo que pinta el
+ * servidor y lo que ve el navegador. Para cambiar el reparto, cambia `SEMILLA`.
+ *
+ * Entran con el mismo mecanismo que los textos (`data-aparece`), pero su
+ * transición es otra: llegan grandes y más ladeadas de lo que acabarán, y se
+ * asientan. Eso es lo que las hace leer como un sello y no como un fundido.
+ */
+
+const LOGOTIPOS = ['pizza_8.webp', 'pizza_9.webp', 'pizza_10.webp'];
+
+const CUANTAS = 7;
+const SEMILLA = 201;
+
+/** Ruido reproducible en [0,1). Solo corre en el servidor. */
+function azar(semilla: number, canal: number) {
+  const n = Math.sin(semilla * 12.9898 + canal * 78.233) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+const entre = (v: number, min: number, max: number) => min + v * (max - min);
+
+const estampas = Array.from({ length: CUANTAS }, (_, i) => {
+  const semilla = SEMILLA + i;
+
+  return {
+    src: LOGOTIPOS[i % LOGOTIPOS.length],
+    // Alternar lados evita que el sorteo amontone tres seguidas en el mismo
+    // borde, que es justo lo que delata que hay un sorteo.
+    lado: i % 2 === 0 ? 'izquierda' : 'derecha',
+    // Una por franja horizontal, moviéndose solo dentro de la suya: reparte a
+    // lo alto sin que dos se pisen.
+    alto: Number((((i + entre(azar(semilla, 1), 0.15, 0.85)) / CUANTAS) * 100).toFixed(2)),
+    // Cuánto se sale por su borde, en partes de su propio ancho.
+    fuera: Number(entre(azar(semilla, 2), 0.26, 0.5).toFixed(3)),
+    giro: Math.round(entre(azar(semilla, 3), -18, 18)),
+    ancho: Math.round(entre(azar(semilla, 4), 96, 170)),
+  };
+});
+---
+
+<div class="estampas" aria-hidden="true">
+  {
+    estampas.map(({ src, lado, alto, fuera, giro, ancho }) => (
+      <img
+        class:list={['estampa', `estampa--${lado}`]}
+        src={`/assets_intro/derived/${src}`}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        data-aparece
+        style={`--alto:${alto}%;--fuera:${fuera};--giro:${giro}deg;--ancho:${ancho}px`}
+      />
+    ))
+  }
+</div>
+
+<style>
+  /* Capa suelta por encima del contenido: son pegatinas, van encima. No
+     intercepta el ratón ni la lee el lector de pantalla —el logo ya está en el
+     titular—. */
+  .estampas {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .estampa {
+    /* El tope en `vw` es lo que las mantiene en su sitio en móvil: a 170px
+       fijos, en una pantalla estrecha tapan media columna. */
+    --medida: min(var(--ancho), 22vw);
+
+    position: absolute;
+    top: var(--alto);
+    width: var(--medida);
+    height: auto;
+
+    /* Postura de reposo. Solo manda cuando no hay JS; con JS la releva
+       `--reposo`, que dice lo mismo. */
+    transform: rotate(var(--giro));
+
+    /* Sombra corta y dura: las despega del fondo lo justo para que no se lean
+       como parte de la foto. */
+    filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.35));
+
+    /* Llegan ladeadas de más y algo grandes, y se asientan girando. */
+    --entrada: rotate(calc(var(--giro) + 12deg)) scale(1.3);
+    --reposo: rotate(var(--giro));
+  }
+
+  /* Se salen por su borde. Lo que sobra lo recorta el `overflow-x: clip` del
+     hero, así que asoman sin abrir scroll horizontal. */
+  .estampa--izquierda {
+    left: calc(var(--medida) * var(--fuera) * -1);
+  }
+
+  .estampa--derecha {
+    right: calc(var(--medida) * var(--fuera) * -1);
+  }
+</style>

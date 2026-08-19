@@ -8,45 +8,101 @@
  *   2. Una pieza principal a lo ancho.
  *   3. Un bloque de recomendaciones con tres piezas en fila.
  *
- * La foto de fondo solo cubre el primer tramo —titular, párrafo y pieza
- * principal—; a partir de las recomendaciones el fondo es el crema plano de la
- * página. El corte no está medido a mano: la foto es el fondo de `__cabecera`,
- * así que termina exactamente donde termina ese bloque.
- *
- * Los textos son lorem ipsum y las imágenes, bloques de color: la maqueta va
- * primero y el material entra después sin tocar el layout.
+ * La foto cubre el hero entero —hasta el pie de las tres piezas—; lo que venga
+ * después de la sección ya es el crema plano de la página. El corte no está
+ * medido a mano: la foto es el fondo de `.hero`, así que termina exactamente
+ * donde termina la sección.
  */
 
-const RECOMENDACIONES = ['Imagen 2', 'Imagen 3', 'Imagen 4'];
+import Estampas from './Estampas.astro';
 
-const RESENA =
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod ' +
-  'tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, ' +
-  'quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo ' +
-  'consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse.';
+/**
+ * La pieza de arriba es ambiente y no lleva nada escrito, así que puede
+ * recortarse a la franja apaisada sin perder información. Es vertical (2:3) en
+ * una caja de 5:2, o sea que solo se ve una rebanada estrecha:
+ * `--encuadre-principal` elige cuál.
+ */
+const PRINCIPAL = {
+  src: '/Hero/dob_1.jpg',
+  ancho: 3000,
+  alto: 4500,
+  alt: 'Un cocinero emplata sobre la barra de la pizzería.',
+};
+
+/**
+ * Las tres de abajo traen el nombre del plato y los ingredientes rotulados
+ * dentro de la propia imagen y pegados a los bordes —el título de `dob_2` va a
+ * un 7% del borde superior; el de `dob_4`, casi en el inferior—. Por eso la
+ * caja respeta su proporción de origen (4:5) en vez de recortar: cualquier
+ * recorte se come los rótulos. Si tocas `--pieza`, cuenta con ello.
+ */
+const RECOMENDACIONES = [
+  {
+    src: '/Hero/dob_2.jpg',
+    alt: 'Pizza Quattro Stagioni: jamón de pavo ahumado, mozzarella fresco, aceitunas negras, pimiento morrón y champiñones.',
+  },
+  {
+    src: '/Hero/dob_3.jpg',
+    alt: 'Pizza Piña Sunset: cebolla morada, tocino, mozzarella fresco y piña ahumada.',
+  },
+  {
+    src: '/Hero/dob_4.jpg',
+    alt: 'Pizza Ahumada Suprema: parmesano, cebolla caramelizada y miel con habanero, tocino y mozzarella fresco.',
+  },
+].map((foto) => ({ ...foto, ancho: 1080, alto: 1350 }));
+
+/**
+ * El párrafo va cortado a mano, un elemento por línea. La referencia no reparte
+ * el texto en líneas parejas: la primera cruza entera y las tres siguientes
+ * quedan cortas y desiguales, y ese desnivel es parte del dibujo. Por debajo de
+ * `64rem` los cortes se apagan (ver la hoja de estilo) y el texto fluye solo.
+ */
+const RESENA = [
+  'La pizza napolitana, de masa tierna y delgada pero bordes altos, es la versión propia de la cocina napolitana de la pizza redonda. El término',
+  'pizza napoletana, por su importancia histórica o regional, se emplea en algunas zonas como sinónimo',
+  'de pizza tonda (‘pizza redonda’). Bajo la denominación pizza napoletana verace artigianale (‘pizza napolitana auténtica',
+  'artesanal’) está reconocida como producto agroalimentario tradicional italiano.',
+];
 ---
 
 <section class="hero">
+  <Estampas />
+
   <div class="hero__cabecera">
     <div class="hero__ancho">
-      <h1 class="hero__titular">Menu</h1>
-      <p class="hero__resena">{RESENA}</p>
+      <h1 class="hero__titular" data-aparece>Menu</h1>
+      <p class="hero__resena" data-aparece set:html={RESENA.join('<br />')} />
 
-      <div class="hero__marcador hero__marcador--principal">
-        <span class="hero__etiqueta">Imagen 1</span>
-      </div>
+      <figure class="hero__pieza hero__pieza--principal">
+        <img
+          class="hero__imagen"
+          src={PRINCIPAL.src}
+          alt={PRINCIPAL.alt}
+          width={PRINCIPAL.ancho}
+          height={PRINCIPAL.alto}
+          decoding="async"
+        />
+      </figure>
     </div>
   </div>
 
   <div class="hero__recomendaciones">
     <div class="hero__ancho">
-      <h2 class="hero__rotulo">Nuestras recomendaciones</h2>
+      <h2 class="hero__rotulo" data-aparece>Nuestras recomendaciones</h2>
 
       <ul class="hero__fila">
         {
-          RECOMENDACIONES.map((etiqueta) => (
-            <li class="hero__marcador">
-              <span class="hero__etiqueta">{etiqueta}</span>
+          RECOMENDACIONES.map(({ src, alt, ancho, alto }) => (
+            <li class="hero__pieza">
+              <img
+                class="hero__imagen"
+                src={src}
+                alt={alt}
+                width={ancho}
+                height={alto}
+                loading="lazy"
+                decoding="async"
+              />
             </li>
           ))
         }
@@ -56,99 +112,123 @@ const RESENA =
 </section>
 
 <style>
+  /* ---------------------------------------------------------------------
+     Mandos del hero. Todo lo que se retoca a ojo vive aquí.
+  --------------------------------------------------------------------- */
   .hero {
-    --hueco: clamp(1.5rem, 2.6vw, 3rem);
-    --marcador: #a3a3a3;
+    --ancho-util: 110rem; /* ancho máximo del contenido */
+    --margen: clamp(1rem, 2.4vw, 2.75rem); /* aire a los lados */
+    --hueco: clamp(1.5rem, 2.6vw, 3rem); /* separación entre las tres piezas */
+
+    --foco: center; /* encuadre de la foto de fondo */
+
+    --titular: clamp(4rem, 19vw, 21rem);
+    --resena: clamp(0.8125rem, 1.15vw, 1.1875rem);
+    --resena-ancho: min(88rem, 100%); /* debe dar para la línea larga entera */
+    --rotulo: clamp(1.5rem, 3.4vw, 3.5rem);
+
+    /* Espacio entre líneas. Cuanto más bajo, más apretado. */
+    --interlinea-titular: 0.82;
+    --interlinea-resena: 1.3;
+    --interlinea-rotulo: 1.05;
+
+    --pieza-principal: 5 / 2; /* proporción de la franja de arriba */
+    --encuadre-principal: center 45%; /* qué rebanada de dob_1 se ve */
+    --pieza: 4 / 5; /* la de origen de las tres: recortar borra sus rótulos */
+    --encuadre: center;
+
+    /* Ancla de las estampas, que van en una capa absoluta. `clip` y no
+       `hidden`: recorta lo que asoma por los lados sin crear un contenedor de
+       scroll, que rompería cualquier `sticky` que venga después. */
+    position: relative;
+    overflow-x: clip;
+
+    /* La foto va sin tratar, como en la referencia. */
+    background-image: url('/Hero/Background.jpg');
+    background-position: var(--foco);
+    background-size: cover;
   }
 
   /* Caja común: fija el ancho útil y los márgenes laterales de todo el hero,
      para que la pieza principal y las recomendaciones compartan eje. */
   .hero__ancho {
     margin-inline: auto;
-    max-width: 110rem;
-    padding-inline: clamp(1rem, 2.4vw, 2.75rem);
+    max-width: var(--ancho-util);
+    padding-inline: var(--margen);
   }
 
-  /* Primer tramo: el único que lleva foto.
-
-     El velo de crema por encima cumple dos funciones —rebaja la foto al lavado
-     de la referencia y le devuelve contraste al párrafo, que en rojo sobre la
-     textura de la pizza no se leía—. Va en el mismo `background` que la imagen
-     para no montar una capa aparte. */
+  /* Sin `min-height`: la referencia es un cartel continuo, y forzar una
+     pantalla completa aquí abría un socavón de foto entre la pieza principal y
+     las recomendaciones. La altura la marca el contenido. */
   .hero__cabecera {
-    min-height: 100svh;
-    padding-block: clamp(2rem, 5vh, 4.5rem) clamp(2.5rem, 6vh, 5.5rem);
-    background-image:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--color-crema) 62%, transparent) 0%,
-        color-mix(in srgb, var(--color-crema) 42%, transparent) 40%,
-        color-mix(in srgb, var(--color-crema) 30%, transparent) 100%
-      ),
-      url('/Hero/Background.jpg');
-    background-position: center;
-    background-size: cover;
+    /* La barra es fija y flota encima: el aire de la referencia se cuenta a
+       partir de su borde inferior, no del borde de la pantalla. */
+    padding-block: calc(var(--altura-barra) + clamp(2rem, 5vh, 4.5rem)) 0;
   }
 
   .hero__titular {
     margin: 0;
     color: var(--color-rojo);
     font-family: var(--font-display);
-    font-size: clamp(4rem, 19vw, 21rem);
+    font-size: var(--titular);
     font-weight: 900;
-    line-height: 0.86;
+    line-height: var(--interlinea-titular);
     letter-spacing: -0.02em;
     text-align: center;
     text-transform: uppercase;
   }
 
+  /* Escalonado corto: el titular abre y el párrafo lo sigue. Simultáneos se
+     leen como un solo bloque que parpadea. */
   .hero__resena {
+    --retardo: 140ms;
+
     margin: clamp(0.75rem, 1.6vw, 1.5rem) auto 0;
-    max-width: min(64rem, 100%);
+    max-width: var(--resena-ancho);
     color: var(--color-rojo);
-    font-size: clamp(0.8125rem, 1.15vw, 1.1875rem);
+    font-size: var(--resena);
     font-weight: 600;
-    line-height: 1.55;
+    line-height: var(--interlinea-resena);
     text-align: center;
     text-wrap: pretty;
   }
 
-  /* Hueco de imagen. Mientras no haya material es un bloque de color con su
-     etiqueta; al llegar la foto solo cambia el contenido, no la caja. */
-  .hero__marcador {
-    display: flex;
-    align-items: flex-start;
-    padding: clamp(0.5rem, 1.4vw, 1.25rem) clamp(0.75rem, 1.8vw, 1.75rem);
-    background-color: var(--marcador);
-    aspect-ratio: 9 / 10;
+  /* La caja fija la proporción y recorta; la imagen la rellena. */
+  .hero__pieza {
+    overflow: hidden;
+    margin: 0;
+    aspect-ratio: var(--pieza);
   }
 
-  .hero__marcador--principal {
+  .hero__pieza--principal {
     margin-top: clamp(1.75rem, 4vw, 3.5rem);
-    aspect-ratio: 5 / 2;
+    aspect-ratio: var(--pieza-principal);
   }
 
-  .hero__etiqueta {
-    color: #fff;
-    font-family: var(--font-display);
-    font-size: clamp(1.25rem, 3vw, 3.25rem);
-    font-weight: 700;
-    line-height: 1.1;
+  .hero__imagen {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--encuadre);
   }
 
-  /* Segundo tramo: sin foto. El crema sale del `body`, así que el corte con la
-     cabecera queda a filo. */
+  .hero__pieza--principal .hero__imagen {
+    object-position: var(--encuadre-principal);
+  }
+
   .hero__recomendaciones {
     padding-block: clamp(2rem, 4.5vw, 3.75rem) clamp(3rem, 7vw, 6rem);
   }
 
+  /* Blanco sobre la foto, como en la referencia. */
   .hero__rotulo {
     margin: 0 0 clamp(1.25rem, 2.6vw, 2.5rem);
-    color: var(--color-tinta);
+    color: #fff;
     font-family: var(--font-display);
-    font-size: clamp(1.5rem, 3.4vw, 3.5rem);
+    font-size: var(--rotulo);
     font-weight: 800;
-    line-height: 1.1;
+    line-height: var(--interlinea-rotulo);
     letter-spacing: -0.01em;
     text-align: center;
   }
@@ -162,15 +242,20 @@ const RESENA =
     list-style: none;
   }
 
-  /* A tres columnas las piezas quedan en tiras demasiado estrechas para leerse
-     como imagen: por debajo del pliegue se apilan. */
+  /* Los cortes del párrafo están calculados para el ancho de escritorio; más
+     abajo dejarían líneas sueltas, así que se apagan y el texto fluye solo. */
+  @media (width < 64rem) {
+    .hero__resena br {
+      display: none;
+    }
+  }
+
+  /* A tres columnas los rótulos de las fotos se vuelven ilegibles: por debajo
+     del pliegue se apilan. La proporción no cambia —sigue siendo la de origen—
+     para no recortarlos. */
   @media (width < 48rem) {
     .hero__fila {
       grid-template-columns: 1fr;
-    }
-
-    .hero__marcador {
-      aspect-ratio: 4 / 3;
     }
   }
 </style>
