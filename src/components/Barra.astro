@@ -1,0 +1,279 @@
+---
+/**
+ * Barra — Doble Cero
+ *
+ * Barra de navegación fija: el logotipo en el centro y dos grupos de enlaces a
+ * los lados. Es de cristal —translúcida y con desenfoque—, así que la foto del
+ * hero se sigue viendo por debajo en vez de quedar cortada por una banda opaca.
+ *
+ * Se comporta como una cabecera que se aparta: mientras bajas se retira hacia
+ * arriba, y en cuanto vuelves a subir reaparece, estés donde estés. En lo alto
+ * de la página no se esconde nunca. El script del final solo marca el estado
+ * con `data-oculta` / `data-posada`; el viaje lo describe el CSS.
+ *
+ * Los enlaces todavía no llevan a ningún sitio: el `#` es un marcador. Para
+ * rellenarlos basta con tocar las dos listas de aquí abajo.
+ */
+
+/**
+ * `LogoDC_Blanco.svg` llegó aplanado —un único trazado blanco que cubre la caja
+ * entera, es decir, un rectángulo—, así que este blanco está derivado de
+ * `LogoDC.svg`: el dibujo hace de máscara y las contraformas se recortan. Si
+ * algún día llega un blanco de verdad desde diseño, se cambia esta línea.
+ */
+const LOGO = { src: '/logo-dc-blanco.svg', ancho: 1016, alto: 688 };
+
+/**
+ * Con `icono` el enlace se dibuja solo con el glifo y el texto pasa a ser su
+ * nombre accesible.
+ */
+const IZQUIERDA = [
+  { texto: 'Instagram', href: '#', icono: '/instagram.svg' },
+  { texto: 'Contacto', href: '#' },
+];
+
+const DERECHA = [
+  { texto: 'Menú', href: '#' },
+  { texto: 'Ubicación', href: '#' },
+];
+---
+
+<header class="barra" data-barra>
+  <nav class="barra__ancho" aria-label="Principal">
+    <ul class="barra__lado">
+      {
+        IZQUIERDA.map(({ texto, href, icono }) => (
+          <li>
+            <a class="barra__enlace" href={href} aria-label={icono ? texto : undefined}>
+              {icono ? (
+                <span class="barra__icono" style={`--glifo: url('${icono}')`} aria-hidden="true" />
+              ) : (
+                texto
+              )}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <a class="barra__logo" href="/">
+      <img src={LOGO.src} alt="Doble Cero" width={LOGO.ancho} height={LOGO.alto} />
+    </a>
+
+    <ul class="barra__lado barra__lado--derecha">
+      {
+        DERECHA.map(({ texto, href }) => (
+          <li>
+            <a class="barra__enlace" href={href}>
+              {texto}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</header>
+
+<style>
+  /* ---------------------------------------------------------------------
+     Mandos de la barra. El alto vive en `global.css` porque el hero también
+     lo necesita para no quedarse debajo.
+  --------------------------------------------------------------------- */
+  .barra {
+    --ancho-util: 110rem; /* el mismo del hero: comparten eje */
+    --margen: clamp(1rem, 2.4vw, 2.75rem);
+    --hueco: clamp(0.9rem, 2.4vw, 2.5rem); /* separación entre enlaces */
+
+    --enlace: clamp(0.75rem, 1.05vw, 0.95rem);
+    --rastro: 0.02em; /* espaciado entre letras del enlace */
+    --icono: clamp(0.95rem, 1.5vw, 1.15rem);
+    --logo-alto: clamp(1.3rem, 2.4vw, 2.05rem);
+
+    /* El cristal. `--velo` es cuánta tinta lleva el fondo: poca sobre la foto
+       del hero, más en cuanto la página pasa al crema y hace falta contraste. */
+    --velo: 24%;
+    --desenfoque: 16px;
+
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    z-index: 50; /* por debajo de la cortina de entrada, que va en 100 */
+    height: var(--altura-barra);
+
+    background-color: color-mix(in srgb, var(--color-tinta) var(--velo), transparent);
+    -webkit-backdrop-filter: blur(var(--desenfoque)) saturate(150%);
+    backdrop-filter: blur(var(--desenfoque)) saturate(150%);
+    border-block-end: 1px solid color-mix(in srgb, #fff 12%, transparent);
+
+    transition:
+      transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 300ms ease;
+    will-change: transform;
+  }
+
+  /* Sin desenfoque el velo se queda en un tul sucio: si el navegador no lo
+     soporta, mejor una banda casi sólida que un cristal que no vela nada. */
+  @supports not (backdrop-filter: blur(1px)) {
+    @supports not (-webkit-backdrop-filter: blur(1px)) {
+      .barra {
+        --velo: 88%;
+      }
+    }
+  }
+
+  .barra[data-posada] {
+    --velo: 40%;
+  }
+
+  .barra[data-oculta] {
+    transform: translateY(-100%);
+  }
+
+  /* Escondida sigue siendo tabulable: si alguien llega a un enlace con el
+     teclado, la barra vuelve sola en vez de dejar el foco fuera de pantalla. */
+  .barra[data-oculta]:focus-within {
+    transform: none;
+  }
+
+  .barra__ancho {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: var(--hueco);
+    height: 100%;
+    margin-inline: auto;
+    max-width: var(--ancho-util);
+    padding-inline: var(--margen);
+  }
+
+  .barra__lado {
+    display: flex;
+    align-items: center;
+    gap: var(--hueco);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .barra__lado--derecha {
+    justify-content: flex-end;
+  }
+
+  .barra__enlace {
+    display: inline-flex;
+    align-items: center;
+    padding-block: 0.35rem;
+    color: #fff;
+    font-size: var(--enlace);
+    font-weight: 500;
+    letter-spacing: var(--rastro);
+    line-height: 1;
+    text-decoration: none;
+    text-transform: lowercase;
+    white-space: nowrap;
+    transition: color 220ms ease;
+  }
+
+  /* Todo el aviso de hover es el color, y es el rojo de la casa: el mismo del
+     titular del hero. Ni subrayado ni desplazamiento. El glifo de Instagram va
+     incluido, que su máscara se pinta con `currentColor`. */
+  .barra__enlace:hover,
+  .barra__enlace:focus-visible {
+    color: var(--color-rojo);
+  }
+
+  /* El SVG de Instagram trae el negro incrustado, así que entra como máscara y
+     el color lo pone la barra. */
+  .barra__icono {
+    display: block;
+    width: var(--icono);
+    height: var(--icono);
+    background-color: currentColor;
+    mask: var(--glifo) center / contain no-repeat;
+    -webkit-mask: var(--glifo) center / contain no-repeat;
+  }
+
+  .barra__logo {
+    display: block;
+    line-height: 0;
+  }
+
+  .barra__logo img {
+    display: block;
+    width: auto;
+    height: var(--logo-alto);
+  }
+
+  .barra__enlace:focus-visible,
+  .barra__logo:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 5px;
+    border-radius: 2px;
+  }
+
+  /* En pantallas estrechas los cuatro enlaces y el logotipo se disputan la
+     misma línea: se aprieta el texto antes que renunciar a ninguno. */
+  @media (width < 30rem) {
+    .barra {
+      --hueco: 0.8rem;
+      --enlace: 0.7rem;
+    }
+  }
+
+  /* Quien no quiere movimiento tiene la barra siempre puesta: esconderla sin
+     recorrido es un parpadeo, y con recorrido es justo lo que no quiere. */
+  @media (prefers-reduced-motion: reduce) {
+    .barra {
+      transition: none;
+    }
+
+    .barra[data-oculta] {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  // La barra se aparta al bajar y vuelve al subir. Aquí solo se decide el
+  // estado; el aspecto y el viaje los pone el CSS del componente.
+  const barra = document.querySelector<HTMLElement>('[data-barra]');
+
+  if (barra) {
+    // Por debajo de esto no hay gesto, hay temblor de trackpad.
+    const UMBRAL = 8;
+    // Mientras lo recorrido no dé ni para la propia barra, no se esconde: en
+    // lo alto de la página todavía forma parte de la portada.
+    const GRACIA = barra.offsetHeight;
+
+    let anterior = Math.max(0, window.scrollY);
+    let pedido = false;
+
+    // Estado de salida: el navegador puede restaurar el scroll a media página.
+    barra.toggleAttribute('data-posada', anterior > GRACIA);
+
+    const revisar = () => {
+      pedido = false;
+
+      const actual = Math.max(0, window.scrollY);
+      const salto = actual - anterior;
+
+      // `anterior` se queda quieto a propósito: así un arrastre lento va
+      // sumando hasta pasar el umbral en vez de perderse migaja a migaja.
+      if (Math.abs(salto) < UMBRAL) return;
+
+      barra.toggleAttribute('data-oculta', salto > 0 && actual > GRACIA);
+      barra.toggleAttribute('data-posada', actual > GRACIA);
+      anterior = actual;
+    };
+
+    addEventListener(
+      'scroll',
+      () => {
+        if (pedido) return;
+        pedido = true;
+        requestAnimationFrame(revisar);
+      },
+      { passive: true },
+    );
+  }
+</script>
