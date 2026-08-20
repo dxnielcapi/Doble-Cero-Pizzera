@@ -1,0 +1,110 @@
+---
+/**
+ * Cinta — Doble Cero
+ *
+ * Banda de texto que rueda sin fin justo debajo de la foto del hero, ya sobre
+ * el crema: el nombre de la casa y lo que se cocina, separados por un punto y
+ * repetidos hasta que se acabe el mundo.
+ *
+ * El bucle no tiene truco de JavaScript: la pista lleva el mismo grupo dos
+ * veces y se desplaza media pista. Cuando la animación vuelve al principio, el
+ * segundo grupo está exactamente donde estaba el primero, así que no hay
+ * salto que ver. La única condición es que un grupo llegue a ser más ancho
+ * que la pantalla —de ahí `REPETICIONES`—, o al volver asomaría el vacío.
+ */
+
+const PALABRAS = ['doble cero', 'pizza napolitana', 'menu doble cero'];
+
+/**
+ * Veces que se repite el par dentro de cada grupo. Con cuatro, el grupo mide
+ * unos 56em: de sobra para cubrir una pantalla 4K con el cuerpo en su tope.
+ */
+const REPETICIONES = 4;
+
+const GRUPO = Array.from({ length: REPETICIONES }, () => PALABRAS).flat();
+---
+
+{/* Decorativa a propósito: para un lector de pantalla esto es la misma frase
+dieciséis veces seguidas. Lo que dice ya está escrito en la reseña del hero. */}
+<div class="cinta" aria-hidden="true" data-aparece>
+  <div class="cinta__pista">
+    {
+      [0, 1].map(() => (
+        <div class="cinta__grupo">
+          {GRUPO.map((palabra) => (
+            <span class="cinta__parte">
+              {palabra}
+              <span class="cinta__punto">•</span>
+            </span>
+          ))}
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  /* ---------------------------------------------------------------------
+     Mandos de la cinta.
+  --------------------------------------------------------------------- */
+  .cinta {
+    --texto: clamp(1.25rem, 4.5vw, 5.5rem);
+    --aire: clamp(1.75rem, 4.5vw, 4rem); /* respiro por arriba y por abajo */
+    --hueco: 0.42em; /* separación entre palabra y punto */
+    --punto: 0.42em; /* cuerpo del separador */
+    --vuelta: 34s; /* lo que tarda en dar una vuelta entera */
+
+    /* `clip` y no `hidden`: recorta lo que sobresale sin montar un contenedor
+       de scroll, igual que en el hero. */
+    overflow-x: clip;
+    padding-block: var(--aire);
+  }
+
+  /* El cuerpo se fija aquí, en la pista, y no en cada palabra: `--hueco` y
+     `--punto` van en `em`, y si el tamaño cambiara a media rama la separación
+     entre palabra y punto no coincidiría con la que hay entre partes. */
+  .cinta__pista {
+    display: flex;
+    width: max-content;
+    color: var(--color-rojo);
+    font-family: var(--font-display);
+    font-size: var(--texto);
+    font-weight: 700;
+    line-height: 1;
+    animation: cinta-rodar var(--vuelta) linear infinite;
+    will-change: transform;
+  }
+
+  /* El relleno del final iguala la junta entre grupos con la separación de
+     dentro; sin él, cada vuelta enseñaría la costura. */
+  .cinta__grupo {
+    display: flex;
+    align-items: center;
+    gap: var(--hueco);
+    padding-inline-end: var(--hueco);
+  }
+
+  .cinta__parte {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--hueco);
+    white-space: nowrap;
+  }
+
+  .cinta__punto {
+    font-size: var(--punto);
+  }
+
+  @keyframes cinta-rodar {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Quien no quiere movimiento se queda con la frase quieta. */
+  @media (prefers-reduced-motion: reduce) {
+    .cinta__pista {
+      animation: none;
+    }
+  }
+</style>
