@@ -19,6 +19,39 @@
   font-display: swap;
 }
 
+/* Caveat, para los rótulos escritos a mano. Sigue el trazo de marcador con el
+   que ya vienen anotadas las fotos del menú, así que el nombre que sale al
+   pasar por encima parece de la misma mano.
+
+   Va en dos trozos con `unicode-range`, tal cual los sirve Google. No es
+   duplicar por duplicar: el navegador solo descarga el trozo que necesita según
+   los caracteres de la página. El español entero —ñ, tildes, ¿, ¡— cae en el
+   primero (U+0000-00FF); el segundo solo viaja si algún día aparece algo del
+   latín extendido. Declararlo, por tanto, sale gratis.
+
+   Licencia SIL Open Font, uso comercial incluido. */
+@font-face {
+  font-family: "Caveat";
+  src: url("/fonts/caveat-latin.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Caveat";
+  src: url("/fonts/caveat-latin-ext.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+    U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* ---------------------------------------------------------------------------
    Paleta
    Muestreada de los recortes de `public/assets_intro/`: crema del papel, rojo
@@ -35,6 +68,7 @@
   --color-oro: #c08a2b;
 
   --font-display: "Coolvetica", "Segoe UI", system-ui, sans-serif;
+  --font-mano: "Caveat", "Segoe Script", cursive;
 }
 
 /* ---------------------------------------------------------------------------
