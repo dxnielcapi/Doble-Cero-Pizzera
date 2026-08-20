@@ -26,6 +26,7 @@ const PRINCIPAL = {
   src: '/Hero/dob_1.jpg',
   ancho: 3000,
   alto: 4500,
+  nombre: 'Doble Cero Pizzerias',
   alt: 'Un cocinero emplata sobre la barra de la pizzería.',
 };
 
@@ -39,15 +40,18 @@ const PRINCIPAL = {
 const RECOMENDACIONES = [
   {
     src: '/Hero/dob_2.jpg',
-    alt: 'Pizza Quattro Stagioni: jamón de pavo ahumado, mozzarella fresco, aceitunas negras, pimiento morrón y champiñones.',
+    nombre: 'Pizza Quattro Stagioni',
+    alt: 'Pizza recién sacada del horno de leña, con jamón de pavo ahumado, mozzarella fresco, aceitunas negras, pimiento morrón y champiñones.',
   },
   {
     src: '/Hero/dob_3.jpg',
-    alt: 'Pizza Piña Sunset: cebolla morada, tocino, mozzarella fresco y piña ahumada.',
+    nombre: 'Pizza Piña Sunset',
+    alt: 'Primer plano de una pizza con cebolla morada, tocino, mozzarella fresco y piña ahumada.',
   },
   {
     src: '/Hero/dob_4.jpg',
-    alt: 'Pizza Ahumada Suprema: parmesano, cebolla caramelizada y miel con habanero, tocino y mozzarella fresco.',
+    nombre: 'Pizza Ahumada Suprema',
+    alt: 'Pizza dentro del horno, con parmesano, cebolla caramelizada, miel con habanero, tocino y mozzarella fresco.',
   },
 ].map((foto) => ({ ...foto, ancho: 1080, alto: 1350 }));
 
@@ -82,6 +86,7 @@ const RESENA = [
           height={PRINCIPAL.alto}
           decoding="async"
         />
+        <figcaption class="hero__nombre">{PRINCIPAL.nombre}</figcaption>
       </figure>
     </div>
   </div>
@@ -92,17 +97,20 @@ const RESENA = [
 
       <ul class="hero__fila">
         {
-          RECOMENDACIONES.map(({ src, alt, ancho, alto }) => (
-            <li class="hero__pieza">
-              <img
-                class="hero__imagen"
-                src={src}
-                alt={alt}
-                width={ancho}
-                height={alto}
-                loading="lazy"
-                decoding="async"
-              />
+          RECOMENDACIONES.map(({ src, nombre, alt, ancho, alto }) => (
+            <li>
+              <figure class="hero__pieza">
+                <img
+                  class="hero__imagen"
+                  src={src}
+                  alt={alt}
+                  width={ancho}
+                  height={alto}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <figcaption class="hero__nombre">{nombre}</figcaption>
+              </figure>
             </li>
           ))
         }
@@ -126,6 +134,13 @@ const RESENA = [
     --resena: clamp(0.8125rem, 1.15vw, 1.1875rem);
     --resena-ancho: min(88rem, 100%); /* debe dar para la línea larga entera */
     --rotulo: clamp(1.5rem, 3.4vw, 3.5rem);
+
+    /* Rótulo manuscrito del hover: tamaño, acercamiento de la foto y hasta
+       dónde tiñe la sombra del pie. */
+    --nombre: clamp(0.95rem, 1.35vw, 1.375rem);
+    --nombre-principal: clamp(1.125rem, 1.8vw, 1.875rem);
+    --zoom: 1.06;
+    --velo: 0.5;
 
     /* Espacio entre líneas. Cuanto más bajo, más apretado. */
     --interlinea-titular: 0.82;
@@ -193,11 +208,71 @@ const RESENA = [
     text-wrap: pretty;
   }
 
-  /* La caja fija la proporción y recorta; la imagen la rellena. */
+  /* La caja fija la proporción y recorta; la imagen la rellena. `relative` para
+     que el rótulo del hover se cuelgue de ella. */
   .hero__pieza {
+    position: relative;
     overflow: hidden;
     margin: 0;
     aspect-ratio: var(--pieza);
+  }
+
+  /* Nombre del plato, al pie. En vez de teñir la foto entera, la sombra es un
+     degradado que solo sube desde abajo: la imagen se queda a la vista y el
+     manuscrito blanco conserva contraste justo donde se apoya. */
+  .hero__nombre {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 2.75em 1em 1em;
+
+    background-image: linear-gradient(to top, rgb(0 0 0 / var(--velo)), transparent);
+    color: #fff;
+    font-family: var(--font-mano);
+    font-size: var(--nombre);
+    font-weight: 600;
+    line-height: 1.15;
+    text-align: center;
+    text-wrap: balance;
+
+    opacity: 0;
+    /* Sube un poco al entrar; acompaña al acercamiento sin competir con él. */
+    transform: translateY(0.5rem);
+    transition:
+      opacity 320ms ease,
+      transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hero__pieza--principal .hero__nombre {
+    font-size: var(--nombre-principal);
+  }
+
+  /* Solo donde hay puntero de verdad. En táctil el hover no existe: se quedaría
+     enganchado tras el toque, tapando la foto hasta que tocaras otra cosa. */
+  @media (hover: hover) and (pointer: fine) {
+    .hero__pieza:hover .hero__imagen {
+      transform: scale(var(--zoom));
+    }
+
+    .hero__pieza:hover .hero__nombre {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__nombre,
+    .hero__imagen {
+      transition: none;
+    }
+
+    .hero__nombre {
+      transform: none;
+    }
+
+    /* Quien pide menos movimiento no quiere que la foto se le mueva debajo. */
+    .hero__pieza:hover .hero__imagen {
+      transform: none;
+    }
   }
 
   .hero__pieza--principal {
@@ -205,12 +280,15 @@ const RESENA = [
     aspect-ratio: var(--pieza-principal);
   }
 
+  /* El acercamiento del hover lo recorta el `overflow: hidden` de la caja: la
+     foto crece por dentro y el layout no se mueve. */
   .hero__imagen {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: var(--encuadre);
+    transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .hero__pieza--principal .hero__imagen {
