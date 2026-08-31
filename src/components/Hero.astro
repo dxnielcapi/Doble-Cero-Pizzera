@@ -17,15 +17,35 @@
 import Estampas from './Estampas.astro';
 
 /**
- * La pieza de arriba es ambiente y no lleva nada escrito, así que puede
- * recortarse a la franja apaisada sin perder información. Es vertical (2:3) en
- * una caja de 5:2, o sea que solo se ve una rebanada estrecha:
- * `--encuadre-principal` elige cuál.
+ * Las fotos se sirven desde `public/Hero/` en WebP y en varios anchos, que
+ * genera `npm run assets:hero` a partir de los originales de `src/assets/hero/`
+ * —los originales no se publican—. Con `srcset` cada visitante se descarga solo
+ * la variante que su pantalla justifica: el móvil no carga la de escritorio.
+ *
+ * Si tocas los anchos, tócalos en los dos sitios: aquí y en el script.
+ */
+const juego = (nombre, anchos) =>
+  anchos.map((ancho) => `/Hero/${nombre}-${ancho}.webp ${ancho}w`).join(', ');
+
+/**
+ * La pieza de arriba es ambiente y no lleva nada escrito, así que se recorta a
+ * la franja apaisada sin perder información. Ese recorte ya viene hecho: el
+ * original es vertical (2:3) y el script lo sirve en 5:2, la proporción de la
+ * caja, para no mandar los dos tercios de foto que el navegador descartaría.
+ *
+ * O sea que el encuadre vertical ya no se decide aquí. Si quieres subir o bajar
+ * la rebanada, se toca `foco` en `scripts/prepare-hero-assets.mjs` y se vuelven
+ * a generar las variantes.
  */
 const PRINCIPAL = {
-  src: '/Hero/dob_1.jpg',
+  src: '/Hero/dob_1-1400.webp',
+  srcset: juego('dob_1', [800, 1400, 2100, 2800]),
+  /* Ocupa el ancho útil entero: 104.5rem con el tope puesto (110rem menos los
+     dos márgenes de 2.75rem), y todo el hueco disponible por debajo. */
+  sizes: '(width >= 110rem) 104.5rem, (width >= 48rem) calc(100vw - 5.5rem), calc(100vw - 2rem)',
+  /* Ya recortada: la proporción de origen es la de la caja. */
   ancho: 3000,
-  alto: 4500,
+  alto: 1200,
   alt: 'Un cocinero emplata sobre la barra de la pizzería.',
 };
 
@@ -38,18 +58,27 @@ const PRINCIPAL = {
  */
 const RECOMENDACIONES = [
   {
-    src: '/Hero/dob_2.jpg',
+    nombre: 'dob_2',
     alt: 'Pizza Quattro Stagioni: jamón de pavo ahumado, mozzarella fresco, aceitunas negras, pimiento morrón y champiñones.',
   },
   {
-    src: '/Hero/dob_3.jpg',
+    nombre: 'dob_3',
     alt: 'Pizza Piña Sunset: cebolla morada, tocino, mozzarella fresco y piña ahumada.',
   },
   {
-    src: '/Hero/dob_4.jpg',
+    nombre: 'dob_4',
     alt: 'Pizza Ahumada Suprema: parmesano, cebolla caramelizada y miel con habanero, tocino y mozzarella fresco.',
   },
-].map((foto) => ({ ...foto, ancho: 1080, alto: 1350 }));
+].map((foto) => ({
+  ...foto,
+  src: `/Hero/${foto.nombre}-1080.webp`,
+  srcset: juego(foto.nombre, [600, 820, 1080]),
+  /* Tres columnas del ancho útil hasta el pliegue; a partir de ahí se apilan y
+     cada una pasa a ocupar la ventana menos los márgenes. */
+  sizes: '(width >= 110rem) 33rem, (width >= 48rem) 31vw, calc(100vw - 2rem)',
+  ancho: 1080,
+  alto: 1350,
+}));
 
 /**
  * El párrafo va cortado a mano, un elemento por línea. La referencia no reparte
@@ -77,9 +106,12 @@ const RESENA = [
         <img
           class="hero__imagen"
           src={PRINCIPAL.src}
+          srcset={PRINCIPAL.srcset}
+          sizes={PRINCIPAL.sizes}
           alt={PRINCIPAL.alt}
           width={PRINCIPAL.ancho}
           height={PRINCIPAL.alto}
+          fetchpriority="high"
           decoding="async"
         />
       </figure>
@@ -92,11 +124,13 @@ const RESENA = [
 
       <ul class="hero__fila">
         {
-          RECOMENDACIONES.map(({ src, alt, ancho, alto }) => (
+          RECOMENDACIONES.map(({ src, srcset, sizes, alt, ancho, alto }) => (
             <li class="hero__pieza">
               <img
                 class="hero__imagen"
                 src={src}
+                srcset={srcset}
+                sizes={sizes}
                 alt={alt}
                 width={ancho}
                 height={alto}
@@ -133,7 +167,11 @@ const RESENA = [
     --interlinea-rotulo: 1.05;
 
     --pieza-principal: 5 / 2; /* proporción de la franja de arriba */
-    --encuadre-principal: center 45%; /* qué rebanada de dob_1 se ve */
+    /* El encuadre de dob_1 lo aplica el script al recortar, no esta capa: la
+       foto ya llega en 5:2 y `cover` no tiene nada que recortar. Se queda como
+       red de seguridad por si algún día `--pieza-principal` deja de coincidir
+       con la proporción que genera el script. */
+    --encuadre-principal: center;
     --pieza: 4 / 5; /* la de origen de las tres: recortar borra sus rótulos */
     --encuadre: center;
 
@@ -143,8 +181,10 @@ const RESENA = [
     position: relative;
     overflow-x: clip;
 
-    /* La foto va sin tratar, como en la referencia. */
-    background-image: url('/Hero/Background.jpg');
+    /* La foto va sin tratar, como en la referencia. Se parte de la variante
+       ligera: el fondo va a sangre, así que quien manda aquí es el ancho de la
+       ventana y no la caja de contenido. La grande entra más abajo. */
+    background-image: url('/Hero/Background-900.webp');
     background-position: var(--foco);
     background-size: cover;
   }
@@ -240,6 +280,14 @@ const RESENA = [
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+
+  /* Por debajo de este ancho la de 900 px ya cubre incluso pantallas 2x, y son
+     160 kB menos en el móvil, que es donde más duelen. */
+  @media (width >= 56rem) {
+    .hero {
+      background-image: url('/Hero/Background-1800.webp');
+    }
   }
 
   /* Los cortes del párrafo están calculados para el ancho de escritorio; más
