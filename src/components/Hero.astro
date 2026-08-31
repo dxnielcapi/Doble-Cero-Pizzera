@@ -8,6 +8,10 @@
  *   2. Una pieza principal a lo ancho.
  *   3. Un bloque de recomendaciones con tres piezas en fila.
  *
+ * Todo entra con el revelado por scroll del layout (`data-aparece`): primero el
+ * titular, luego el párrafo y por último las fotos, que suben un punto más que
+ * el texto. Las tres de abajo van escalonadas de izquierda a derecha.
+ *
  * La foto cubre el hero entero —hasta el pie de las tres piezas—; lo que venga
  * después de la sección ya es el crema plano de la página. El corte no está
  * medido a mano: la foto es el fondo de `.hero`, así que termina exactamente
@@ -102,7 +106,7 @@ const RESENA = [
       <h1 class="hero__titular" data-aparece>Menu</h1>
       <p class="hero__resena" data-aparece set:html={RESENA.join('<br />')} />
 
-      <figure class="hero__pieza hero__pieza--principal">
+      <figure class="hero__pieza hero__pieza--principal" data-aparece>
         <img
           class="hero__imagen"
           src={PRINCIPAL.src}
@@ -124,8 +128,8 @@ const RESENA = [
 
       <ul class="hero__fila">
         {
-          RECOMENDACIONES.map(({ src, srcset, sizes, alt, ancho, alto }) => (
-            <li class="hero__pieza">
+          RECOMENDACIONES.map(({ src, srcset, sizes, alt, ancho, alto }, i) => (
+            <li class="hero__pieza" data-aparece style={`--retardo: ${(i + 1) * 110}ms`}>
               <img
                 class="hero__imagen"
                 src={src}
@@ -235,12 +239,20 @@ const RESENA = [
 
   /* La caja fija la proporción y recorta; la imagen la rellena. */
   .hero__pieza {
+    /* Suben un poco más que el texto y llegan mínimamente pasadas de tamaño,
+       para que la foto se asiente en vez de encenderse de golpe. El escalón es
+       pequeño a propósito: a partir de ahí ya no es un revelado, es un zoom. */
+    --entrada: translateY(1.75rem) scale(1.02);
+
     overflow: hidden;
     margin: 0;
     aspect-ratio: var(--pieza);
   }
 
   .hero__pieza--principal {
+    /* Cierra la entrada de la cabecera: titular, párrafo y por último la foto. */
+    --retardo: 240ms;
+
     margin-top: clamp(1.75rem, 4vw, 3.5rem);
     aspect-ratio: var(--pieza-principal);
   }
