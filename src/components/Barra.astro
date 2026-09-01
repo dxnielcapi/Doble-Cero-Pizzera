@@ -23,18 +23,21 @@
  */
 const LOGO = { src: '/logo-dc-blanco.svg', ancho: 1016, alto: 688 };
 
+/** El glifo y el texto llevan al mismo sitio: una sola fuente para los dos. */
+const INSTAGRAM = 'https://www.instagram.com/doble00_pizzeriaa/';
+
 /**
  * Con `icono` el enlace se dibuja solo con el glifo y el texto pasa a ser su
  * nombre accesible.
  */
 const IZQUIERDA = [
-  { texto: 'Instagram', href: '#', icono: '/instagram.svg' },
-  { texto: 'Contacto', href: '#' },
+  { texto: 'Instagram', href: INSTAGRAM, icono: '/instagram.svg' },
+  { texto: 'Contacto', href: INSTAGRAM },
 ];
 
 const DERECHA = [
   { texto: 'Menú', href: '#menu' },
-  { texto: 'Ubicación', href: '#' },
+  { texto: 'Ubicación', href: 'https://maps.app.goo.gl/WGP82cDoTEnTui5PA' },
 ];
 ---
 

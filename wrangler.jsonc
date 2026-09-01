@@ -1,0 +1,17 @@
+/**
+ * Configuración del deploy en Cloudflare Workers.
+ *
+ * El sitio es estático: no hay Worker que ejecutar, solo el contenido de
+ * `dist/` que sirve la plataforma. Aun así hace falta declararlo aquí, porque
+ * wrangler no mira el proyecto: o le dices qué subir, o no sube nada.
+ */
+{
+	"name": "doble-cero-pizzera",
+	"compatibility_date": "2026-09-01",
+	"assets": {
+		// Lo que deja `astro build`. Es la única fuente de la verdad: la
+		// autodetección de wrangler acertaba de milagro y ya avisa de que esta
+		// versión de Astro no le consta.
+		"directory": "./dist"
+	}
+}

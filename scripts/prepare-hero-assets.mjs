@@ -5,8 +5,9 @@
 // cerca de 900 kB cada una. El hero nunca las muestra a ese tamaño, de modo que
 // el navegador se traga megabytes para tirar la mayor parte al escalar.
 //
-// Este script deja en `public/Hero/` un WebP por cada ancho que el maquetado
-// puede llegar a pedir. Los anchos no son redondeos a ojo, salen de la caja:
+// Este script deja en `public/Hero/` una variante por cada ancho que el
+// maquetado puede llegar a pedir —WebP siempre, y AVIF además donde el consumo
+// permite elegir formato. Los anchos no son redondeos a ojo, salen de la caja:
 // el contenido del hero tiene un tope de 110rem (1760 px) menos los márgenes,
 // o sea 1672 px útiles. De ahí sale cada fila de la tabla.
 //
@@ -26,6 +27,11 @@ const PIEZAS = [
     nombre: 'Background',
     anchos: [900, 1800],
     calidad: 68,
+    // El fondo es el único que se pide desde CSS, donde `image-set()` deja caer
+    // el formato sin tocar el marcado: sale a cuenta darle también AVIF. A esta
+    // calidad pesa un tercio menos que el WebP y mide algo mejor de fidelidad
+    // frente al original, así que no hay nada que sopesar.
+    avif: 50,
   },
   {
     // La franja principal es una foto vertical (2:3) metida en una caja de 5:2:
@@ -72,7 +78,7 @@ async function caja(ruta, { proporcion, foco }) {
   return { left: 0, top: Math.round((height - alto) * foco), width, height: alto };
 }
 
-for (const { nombre, anchos, calidad, recorte } of PIEZAS) {
+for (const { nombre, anchos, calidad, avif, recorte } of PIEZAS) {
   const desde = `${SRC_DIR}/${nombre}.jpg`;
   const { size: original } = await stat(desde);
   pesoOriginal += original;
@@ -80,16 +86,22 @@ for (const { nombre, anchos, calidad, recorte } of PIEZAS) {
   const salidas = [];
 
   for (const ancho of anchos) {
-    const pieza = sharp(desde);
-    if (recorte) pieza.extract(await caja(desde, recorte));
+    const pesos = [];
 
-    const info = await pieza
-      .resize({ width: ancho, withoutEnlargement: true })
-      .webp({ quality: calidad, effort: 6 })
-      .toFile(`${OUT_DIR}/${nombre}-${ancho}.webp`);
+    for (const formato of avif ? ['avif', 'webp'] : ['webp']) {
+      const pieza = sharp(desde);
+      if (recorte) pieza.extract(await caja(desde, recorte));
 
-    pesoFinal += info.size;
-    salidas.push(`${info.width}px ${(info.size / 1024).toFixed(0)} kB`);
+      const info = await pieza
+        .resize({ width: ancho, withoutEnlargement: true })
+        [formato]({ quality: formato === 'avif' ? avif : calidad, effort: 6 })
+        .toFile(`${OUT_DIR}/${nombre}-${ancho}.${formato}`);
+
+      pesoFinal += info.size;
+      pesos.push(`${formato} ${(info.size / 1024).toFixed(0)} kB`);
+    }
+
+    salidas.push(`${ancho}px ${pesos.join(' / ')}`);
   }
 
   console.log(

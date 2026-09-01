@@ -37,6 +37,16 @@ const PIEZAS = Array.from({ length: 10 }, (_, i) => `/assets_intro/derived/pizza
 		esconderse. Un script diferido llegaría tarde y se vería el parpadeo. */}
 		<script is:inline>
 			document.documentElement.classList.add('con-aparicion');
+
+			// Al recargar, el navegador devuelve la página a donde estaba. Aquí eso
+			// significa reaparecer a media página con la cortina echada y el hero
+			// ya revelado a puerta cerrada, así que se apaga: cada carga empieza
+			// arriba. Va aquí y no en un script diferido porque la restauración
+			// ocurre antes de que ese llegue a ejecutarse.
+			//
+			// Un `#ancla` en la URL se sigue respetando: no es memoria del
+			// navegador, es una intención de quien abrió el enlace.
+			if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 		</script>
 
 		{/* Coolvetica va autoalojada (ver `global.css`): se acabaron los viajes a
@@ -79,12 +89,38 @@ const PIEZAS = Array.from({ length: 10 }, (_, i) => `/assets_intro/derived/pizza
 							mirador.unobserve(entrada.target);
 						}
 					},
-					// Pide un poco más que asomar: si no, lo de la primera pantalla se
-					// revela antes de que nadie lo esté mirando.
-					{ rootMargin: '0px 0px -12% 0px', threshold: 0.15 },
+					// Basta con que el borde de arriba cruce la línea: el revelado
+					// arranca cuando el elemento asoma, no cuando ya está medio dentro.
+					// Un `threshold` alto castigaba a lo que mide más que la pantalla
+					// —las fotos del hero, que en móvil pasan de una pantalla de alto—:
+					// exigirles un 15% de su propia altura las dejaba en blanco hasta
+					// casi el final del scroll. La línea se queda un poco por encima del
+					// borde inferior para no revelar nada aún fuera de campo.
+					{ rootMargin: '0px 0px -8% 0px', threshold: 0 },
 				);
 
-				const arrancar = () => objetivos.forEach((el) => mirador.observe(el));
+				// Por debajo de esa línea queda una franja muerta al final del
+				// documento: lo que caiga ahí con la página ya al fondo no llega a
+				// cruzarla nunca y se quedaría invisible. Le pasaba al último topping
+				// de la carta, que es el último elemento de la página y solo tiene el
+				// margen inferior de la sección por debajo. Al tocar fondo se revela lo
+				// que falte.
+				const revelarRezagados = () => {
+					const fondo = document.documentElement.scrollHeight - window.innerHeight;
+					if (window.scrollY < fondo - 2) return;
+
+					objetivos.forEach(marcar);
+					mirador.disconnect();
+					removeEventListener('scroll', revelarRezagados);
+				};
+
+				const arrancar = () => {
+					objetivos.forEach((el) => mirador.observe(el));
+					addEventListener('scroll', revelarRezagados, { passive: true });
+					// Por si la página entera cabe en la pantalla y no hay scroll que
+					// llegue a disparar nada.
+					revelarRezagados();
+				};
 
 				// La cortina tapa la pantalla y deja el contenido en `visibility:
 				// hidden`, que sigue contando como visible para el observador. Sin

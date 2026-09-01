@@ -129,7 +129,7 @@ const RESENA = [
       <ul class="hero__fila">
         {
           RECOMENDACIONES.map(({ src, srcset, sizes, alt, ancho, alto }, i) => (
-            <li class="hero__pieza" data-aparece style={`--retardo: ${(i + 1) * 110}ms`}>
+            <li class="hero__pieza" data-aparece style={`--paso: ${(i + 1) * 110}ms`}>
               <img
                 class="hero__imagen"
                 src={src}
@@ -187,7 +187,10 @@ const RESENA = [
 
     /* La foto va sin tratar, como en la referencia. Se parte de la variante
        ligera: el fondo va a sangre, así que quien manda aquí es el ancho de la
-       ventana y no la caja de contenido. La grande entra más abajo. */
+       ventana y no la caja de contenido. La grande entra más abajo.
+
+       Aquí va el WebP, que lo entiende todo el mundo; el AVIF entra más abajo,
+       en su propio `@supports`. */
     background-image: url('/Hero/Background-900.webp');
     background-position: var(--foco);
     background-size: cover;
@@ -285,6 +288,13 @@ const RESENA = [
     text-align: center;
   }
 
+  /* El escalonado de izquierda a derecha lo trae cada pieza en `--paso`; aquí
+     se decide si se aplica. Va así y no en línea porque en móvil hay que poder
+     apagarlo, y a un estilo en línea no le gana ninguna regla. */
+  .hero__fila .hero__pieza {
+    --retardo: var(--paso, 0ms);
+  }
+
   .hero__fila {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -302,6 +312,27 @@ const RESENA = [
     }
   }
 
+  /* El fondo en AVIF: un tercio del peso del WebP y algo más fiel al original.
+     Va en un `@supports` y no como segunda declaración detrás del WebP porque
+     el minificador da por soportado `image-set()` con `type()` en todo el
+     abanico de destino y se come la línea de reserva —y entonces los que
+     entienden `image-set()` pero no `type()`, Safari 16 entre ellos, se
+     quedarían sin fondo. Un bloque `@supports` no lo puede plegar.
+
+     Al ir después, gana por orden a las dos reglas de arriba; dentro, la del
+     media query gana a la de base igual que fuera. */
+  @supports (background-image: image-set(url('/Hero/Background-900.avif') type('image/avif'))) {
+    .hero {
+      background-image: image-set(url('/Hero/Background-900.avif') type('image/avif'));
+    }
+
+    @media (width >= 56rem) {
+      .hero {
+        background-image: image-set(url('/Hero/Background-1800.avif') type('image/avif'));
+      }
+    }
+  }
+
   /* Los cortes del párrafo están calculados para el ancho de escritorio; más
      abajo dejarían líneas sueltas, así que se apagan y el texto fluye solo. */
   @media (width < 64rem) {
@@ -316,6 +347,13 @@ const RESENA = [
   @media (width < 48rem) {
     .hero__fila {
       grid-template-columns: 1fr;
+    }
+
+    /* El escalonado de izquierda a derecha solo dice algo cuando las tres se
+       ven a la vez. Apiladas, cada una entra en su propio momento y el retardo
+       heredado solo la hace llegar tarde a su cita. */
+    .hero__fila .hero__pieza {
+      --retardo: 0ms;
     }
   }
 </style>
