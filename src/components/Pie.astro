@@ -1,0 +1,256 @@
+---
+/**
+ * Pie — Doble Cero
+ *
+ * El cierre de la página: dónde estamos y cómo dar con nosotros. Es la banda
+ * oscura que remata el crema, hermana de la barra —mismo logotipo en blanco,
+ * mismo glifo de Instagram, mismo rojo al pasar por encima—, para que la página
+ * empiece y termine con la misma voz.
+ *
+ * No inventa datos: los dos enlaces son los mismos que ya vivían en la barra
+ * (`Barra.astro`), declarados aquí una vez y compartidos. Si la pizzería cambia
+ * de mapa o de cuenta, se toca arriba del todo y listo.
+ *
+ * Ojo con el nombre: esto es el pie de la *página*. El `PIE` de
+ * `src/data/menu.ts` es otra cosa —la línea de alérgenos y horarios al final de
+ * la carta— y la pinta `Menu.astro`.
+ */
+
+/** Mismo blanco derivado que usa la barra (ver el comentario de allí). */
+const LOGO = { src: '/logo-dc-blanco.svg', ancho: 1016, alto: 688 };
+
+const INSTAGRAM = 'https://www.instagram.com/doble00_pizzeriaa/';
+const ARROBA = '@doble00_pizzeriaa';
+
+/**
+ * La ubicación.
+ *
+ * `lineas` está vacío a propósito: la dirección escrita no consta en ninguna
+ * parte del proyecto y no se inventa. En cuanto la casa la dé, se escriben aquí
+ * las líneas —calle y número en la primera, colonia y municipio en la segunda—
+ * y el pie las pinta encima del enlace sin tocar nada más. Vacío, el pie se
+ * queda solo con el mapa, que sí es exacto.
+ */
+const UBICACION = {
+  lineas: [] as string[],
+  mapa: 'https://maps.app.goo.gl/WGP82cDoTEnTui5PA',
+};
+
+/** El año se calcula al compilar: un pie con el año congelado envejece solo. */
+const ANIO = new Date().getFullYear();
+---
+
+<footer class="pie" id="contacto">
+  <div class="pie__ancho">
+    <div class="pie__marca" data-aparece>
+      <img
+        class="pie__logo"
+        src={LOGO.src}
+        alt="Doble Cero"
+        width={LOGO.ancho}
+        height={LOGO.alto}
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+
+    <section class="pie__bloque" data-aparece style="--retardo: 80ms">
+      <h2 class="pie__rotulo">Dónde estamos</h2>
+
+      {
+        UBICACION.lineas.length > 0 && (
+          <address class="pie__direccion">
+            {UBICACION.lineas.map((linea) => (
+              <span>{linea}</span>
+            ))}
+          </address>
+        )
+      }
+
+      <a class="pie__enlace" href={UBICACION.mapa} target="_blank" rel="noopener">
+        {/* El alfiler va incrustado y no como archivo: son cuatro trazos y no
+            merecen una petición aparte. `currentColor` para que siga al enlace
+            en el hover, igual que el glifo de Instagram. */}
+        <svg class="pie__glifo" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            fill="currentColor"
+            d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"
+          />
+        </svg>
+        Ver en Google Maps
+      </a>
+    </section>
+
+    <section class="pie__bloque" data-aparece style="--retardo: 160ms">
+      <h2 class="pie__rotulo">Contacto</h2>
+
+      {/* El enlace va pegado al rótulo, como en la columna de al lado: así los
+          dos caen en la misma línea y la nota queda debajo, de pie de foto. */}
+      <a class="pie__enlace" href={INSTAGRAM} target="_blank" rel="noopener">
+        {/* El SVG de Instagram trae el negro incrustado: entra como máscara y
+            el color lo pone el enlace. Mismo truco que en la barra. */}
+        <span class="pie__glifo pie__glifo--mascara" aria-hidden="true"></span>
+        {ARROBA}
+      </a>
+
+      <p class="pie__nota">Reservas y pedidos por mensaje directo.</p>
+    </section>
+  </div>
+
+  <div class="pie__ancho pie__ancho--raya">
+    <p class="pie__credito">© {ANIO} Doble Cero</p>
+    <a class="pie__subir" href="#">Volver arriba ↑</a>
+  </div>
+</footer>
+
+<style>
+  /* ---------------------------------------------------------------------
+     Mandos del pie. Mismo eje y mismos márgenes que el hero, la barra y la
+     carta: la página entera se lee sobre una sola columna.
+  --------------------------------------------------------------------- */
+  .pie {
+    --ancho-util: 110rem;
+    --margen: clamp(1rem, 2.4vw, 2.75rem);
+    --hueco: clamp(1.75rem, 4vw, 3.5rem);
+
+    --rotulo: clamp(0.7rem, 1vw, 0.8rem);
+    --texto: clamp(0.875rem, 1.1vw, 1rem);
+    --menudo: clamp(0.75rem, 0.95vw, 0.85rem);
+    --logo-alto: clamp(1.75rem, 3.4vw, 2.5rem);
+    --glifo: 1.05em;
+
+    background-color: var(--color-tinta);
+    color: var(--color-crema);
+    padding-block: clamp(2.75rem, 6vw, 4.5rem) clamp(1.25rem, 2.5vw, 1.75rem);
+  }
+
+  .pie__ancho {
+    display: grid;
+    gap: var(--hueco);
+    margin-inline: auto;
+    max-width: var(--ancho-util);
+    padding-inline: var(--margen);
+  }
+
+  /* A partir del pliegue el pie se abre en tres: la marca ocupa el doble que
+     cada columna de enlaces, que si no queda un logotipo perdido en un campo. */
+  @media (width >= 42rem) {
+    .pie__ancho {
+      grid-template-columns: 2fr 1fr 1fr;
+      align-items: start;
+    }
+  }
+
+  .pie__logo {
+    display: block;
+    width: auto;
+    height: var(--logo-alto);
+  }
+
+  .pie__bloque {
+    display: grid;
+    justify-items: start;
+    gap: 0.5rem;
+  }
+
+  .pie__rotulo {
+    margin: 0;
+    color: var(--color-oro);
+    font-size: var(--rotulo);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  /* `<address>` viene en cursiva de fábrica y aquí no pinta nada. */
+  .pie__direccion {
+    display: grid;
+    font-style: normal;
+    font-size: var(--texto);
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .pie__nota {
+    margin: 0;
+    color: color-mix(in srgb, var(--color-crema) 70%, transparent);
+    font-size: var(--menudo);
+    font-weight: 500;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+
+  .pie__enlace {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    color: var(--color-crema);
+    font-size: var(--texto);
+    font-weight: 600;
+    line-height: 1.3;
+    text-decoration: none;
+    transition: color 220ms ease;
+  }
+
+  /* El aviso es el rojo de la casa, igual que en la barra. Aquí además se
+     subraya: sobre la banda oscura el rojo solo pierde fuelle, y un pie es
+     justo donde se busca el enlace con la vista. */
+  .pie__enlace:hover,
+  .pie__enlace:focus-visible {
+    color: var(--color-rojo);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  .pie__glifo {
+    flex: none;
+    width: var(--glifo);
+    height: var(--glifo);
+  }
+
+  .pie__glifo--mascara {
+    display: block;
+    background-color: currentColor;
+    mask: url('/instagram.svg') center / contain no-repeat;
+    -webkit-mask: url('/instagram.svg') center / contain no-repeat;
+  }
+
+  /* ------------------------------------------------------------ La raya */
+
+  .pie__ancho--raya {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    margin-block-start: clamp(2rem, 5vw, 3.5rem);
+    padding-block-start: clamp(0.9rem, 2vw, 1.25rem);
+    border-block-start: 1px solid color-mix(in srgb, var(--color-crema) 16%, transparent);
+    color: color-mix(in srgb, var(--color-crema) 60%, transparent);
+    font-size: var(--menudo);
+  }
+
+  .pie__credito {
+    margin: 0;
+    letter-spacing: 0.04em;
+  }
+
+  .pie__subir {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 220ms ease;
+  }
+
+  .pie__subir:hover,
+  .pie__subir:focus-visible {
+    color: var(--color-rojo);
+  }
+
+  .pie__enlace:focus-visible,
+  .pie__subir:focus-visible {
+    outline: 2px solid var(--color-crema);
+    outline-offset: 5px;
+    border-radius: 2px;
+  }
+</style>
