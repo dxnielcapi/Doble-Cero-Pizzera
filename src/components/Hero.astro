@@ -129,7 +129,7 @@ const RESENA = [
       <ul class="hero__fila">
         {
           RECOMENDACIONES.map(({ src, srcset, sizes, alt, ancho, alto }, i) => (
-            <li class="hero__pieza" data-aparece style={`--retardo: ${(i + 1) * 110}ms`}>
+            <li class="hero__pieza" data-aparece style={`--paso: ${(i + 1) * 110}ms`}>
               <img
                 class="hero__imagen"
                 src={src}
@@ -288,6 +288,13 @@ const RESENA = [
     text-align: center;
   }
 
+  /* El escalonado de izquierda a derecha lo trae cada pieza en `--paso`; aquí
+     se decide si se aplica. Va así y no en línea porque en móvil hay que poder
+     apagarlo, y a un estilo en línea no le gana ninguna regla. */
+  .hero__fila .hero__pieza {
+    --retardo: var(--paso, 0ms);
+  }
+
   .hero__fila {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -340,6 +347,13 @@ const RESENA = [
   @media (width < 48rem) {
     .hero__fila {
       grid-template-columns: 1fr;
+    }
+
+    /* El escalonado de izquierda a derecha solo dice algo cuando las tres se
+       ven a la vez. Apiladas, cada una entra en su propio momento y el retardo
+       heredado solo la hace llegar tarde a su cita. */
+    .hero__fila .hero__pieza {
+      --retardo: 0ms;
     }
   }
 </style>
