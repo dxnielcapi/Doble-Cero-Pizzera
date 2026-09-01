@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Intro from '../components/Intro.astro';
 import Barra from '../components/Barra.astro';
+import Pie from '../components/Pie.astro';
 
 interface Props {
 	title?: string;
@@ -67,6 +68,7 @@ const PIEZAS = Array.from({ length: 10 }, (_, i) => `/assets_intro/derived/pizza
 		{intro && <Intro />}
 		<Barra />
 		<slot />
+		<Pie />
 
 		<script>
 			// Revelado por scroll. Solo toca el atributo: el aspecto lo decide el
