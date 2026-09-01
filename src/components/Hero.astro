@@ -5,7 +5,8 @@
  * Portada del menú, montada sobre la referencia de dirección de arte:
  *
  *   1. Titular gigante en rojo, con un párrafo centrado debajo.
- *   2. Una pieza principal a lo ancho.
+ *   2. Una pieza principal a lo ancho (apagada de momento: ver el bloque
+ *      comentado en la plantilla).
  *   3. Un bloque de recomendaciones con tres piezas en fila.
  *
  * Todo entra con el revelado por scroll del layout (`data-aparece`): primero el
@@ -106,6 +107,11 @@ const RESENA = [
       <h1 class="hero__titular" data-aparece>Menu</h1>
       <p class="hero__resena" data-aparece set:html={RESENA.join('<br />')} />
 
+      {/* Apagada a la espera de la foto definitiva. Se comenta —y no se
+          esconde con CSS— para que el navegador tampoco se la descargue.
+          Cuando llegue la nueva: se cambian los archivos de `public/Hero/`,
+          se ajusta `PRINCIPAL` si cambia la proporción y se descomenta.
+
       <figure class="hero__pieza hero__pieza--principal" data-aparece>
         <img
           class="hero__imagen"
@@ -119,6 +125,7 @@ const RESENA = [
           decoding="async"
         />
       </figure>
+      */}
     </div>
   </div>
 
