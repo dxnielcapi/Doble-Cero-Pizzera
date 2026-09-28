@@ -20,18 +20,63 @@ const {
 // La cortina no puede empezar a moverse hasta tener sus recortes: se piden
 // junto al HTML para acortar todo lo posible el crema en blanco del principio.
 const PIEZAS = Array.from({ length: 10 }, (_, i) => `/assets_intro/derived/pizza_${i + 1}.webp`);
+
+// Las tarjetas de enlace (WhatsApp, Facebook, X, Telegram) leen el HTML desde
+// fuera: todo lo que les pasemos tiene que ser una URL absoluta, de ahí el
+// `site` de `astro.config.mjs`. La foto es la del horno.
+const canonica = new URL(Astro.url.pathname, Astro.site);
+const OG_IMAGEN = new URL('/Hero/dob_4-600.webp', Astro.site);
+// Gemela en JPEG del mismo encuadre: hay scrapers —WhatsApp, entre otros— que
+// todavía no abren WebP y se quedarían sin miniatura. Va como segunda opción,
+// que la primera es la que manda.
+const OG_IMAGEN_JPG = new URL('/Hero/dob_4-og.jpg', Astro.site);
+const OG_ALT = 'Pizza Ahumada Suprema saliendo del horno de Doble Cero.';
 ---
 
 <!doctype html>
 <html lang="es" class={intro ? 'esta-cargando intro-vacio' : undefined}>
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
-		<meta name="description" content={description} />
-		<meta name="theme-color" content="#f6e9c8" />
+
+		{/* El logo de la casa sobre el tinta de la marca: en blanco sobre
+		transparente desaparecía en las pestañas claras. `favicon.svg` manda en
+		los navegadores modernos; el `.ico` es para los que aún piden
+		`/favicon.ico` a pelo, y el `apple-touch-icon` para el icono de la
+		pantalla de inicio en iOS. Los tres salen del mismo dibujo
+		(`scripts/prepare-icons.mjs`). */}
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" sizes="32x32" href="/favicon.ico" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
 		<title>{title}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={canonica} />
+		<meta name="theme-color" content="#f6e9c8" />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Doble Cero" />
+		<meta property="og:locale" content="es_MX" />
+		<meta property="og:url" content={canonica} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={OG_IMAGEN} />
+		<meta property="og:image:type" content="image/webp" />
+		<meta property="og:image:width" content="600" />
+		<meta property="og:image:height" content="750" />
+		<meta property="og:image:alt" content={OG_ALT} />
+		<meta property="og:image" content={OG_IMAGEN_JPG} />
+		<meta property="og:image:type" content="image/jpeg" />
+		<meta property="og:image:width" content="900" />
+		<meta property="og:image:height" content="1125" />
+		<meta property="og:image:alt" content={OG_ALT} />
+
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={OG_IMAGEN} />
+		<meta name="twitter:image:alt" content={OG_ALT} />
 
 		{/* En línea y en el `<head>` a propósito: marca la raíz antes del primer
 		pintado, así el contenido con `data-aparece` nunca llega a verse antes de
