@@ -18,6 +18,7 @@
  * vez de dejar una etiqueta mintiendo.
  */
 
+import Estampas from './Estampas.astro';
 import { SECCIONES, formatearPrecio } from '../data/menu';
 
 const CARTA = SECCIONES.find((seccion) => seccion.id === 'pizzas')?.platos ?? [];
@@ -74,6 +75,16 @@ const FASE = 0.31; // s
 ---
 
 <section class="galeria" id="galeria" aria-labelledby="galeria-titulo">
+  {/* La zona intocable es el ancho de la rejilla: las pegatinas rondan la tira
+      pero no llegan a solaparse con ninguna pizza ni con su precio. */}
+  <Estampas
+    cuantas={4}
+    semilla={733}
+    zona="78rem"
+    ancho={[78, 132]}
+    logotipos={['pizza_9.webp', 'pizza_4.webp', 'pizza_8.webp']}
+  />
+
   <div class="galeria__ancho">
     <header class="galeria__cabecera">
       <h2 class="galeria__titular" id="galeria-titulo" data-aparece>Del horno</h2>
@@ -149,6 +160,11 @@ const FASE = 0.31; // s
     --entradilla: clamp(0.85rem, 1.1vw, 1.0625rem);
     --nombre: clamp(0.9rem, 3.4vw, 1.1rem);
     --menudo: clamp(0.75rem, 2.8vw, 0.9rem);
+
+    /* Ancla de las estampas. El `clip` recorta lo que asoma por los lados sin
+       crear un contenedor de scroll que se pelearía con el carrusel. */
+    position: relative;
+    overflow-x: clip;
 
     background-color: var(--color-crema);
     padding-block: clamp(3rem, 7vw, 5.5rem) clamp(3.5rem, 8vw, 6.5rem);
@@ -311,10 +327,38 @@ const FASE = 0.31; // s
     letter-spacing: 0.04em;
   }
 
+  /* Mismo bote que en la carta, para que las dos cifras de la página se
+     comporten igual: sube, cae y rebota corto en cuanto la pieza se ha
+     revelado. Va en `transform`, que aquí está libre —el vaivén lo lleva el
+     recorte, no el precio—. */
+  @keyframes galeria-salto-precio {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    28% {
+      transform: translateY(-0.42em) scale(1.07);
+    }
+    52% {
+      transform: translateY(0) scale(0.97);
+    }
+    72% {
+      transform: translateY(-0.14em) scale(1.02);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .galeria__pizza[data-aparece='dentro'] .galeria__precio {
+    animation: galeria-salto-precio 760ms cubic-bezier(0.33, 0, 0.3, 1)
+      calc(var(--retardo, 0ms) + 460ms) both;
+  }
+
   /* Quien pide menos movimiento no quiere precisamente un bucle infinito: las
      pizzas se quedan quietas y centradas. */
   @media (prefers-reduced-motion: reduce) {
-    .galeria__pizza[data-aparece='dentro'] .galeria__recorte {
+    .galeria__pizza[data-aparece='dentro'] .galeria__recorte,
+    .galeria__pizza[data-aparece='dentro'] .galeria__precio {
       animation: none;
     }
   }

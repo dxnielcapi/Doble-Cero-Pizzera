@@ -14,6 +14,7 @@
  * aquí la tinta es oscura y el rojo se guarda para los títulos y lo destacado.
  */
 
+import Estampas from './Estampas.astro';
 import { SECCIONES, ENTRADILLA, PIE, formatearPrecio } from '../data/menu';
 
 /**
@@ -26,6 +27,16 @@ const RETARDO_MAXIMO = 330; // ms
 ---
 
 <section class="menu" id="menu">
+  {/* Pegatinas por los márgenes. `--ancho-lectura` es la columna donde vive
+      la carta: se la pasamos como zona intocable y ninguna llega a rozarla. */}
+  <Estampas
+    cuantas={8}
+    semilla={517}
+    zona="78rem"
+    ancho={[84, 148]}
+    logotipos={['pizza_4.webp', 'pizza_8.webp', 'pizza_10.webp']}
+  />
+
   <div class="menu__ancho">
     <header class="menu__cabecera">
       <h2 class="menu__titular" data-aparece>La carta</h2>
@@ -139,6 +150,12 @@ const RETARDO_MAXIMO = 330; // ms
     --plato: clamp(1rem, 1.35vw, 1.3rem);
     --ingredientes: clamp(0.8125rem, 1vw, 0.95rem);
     --menudo: clamp(0.6875rem, 0.85vw, 0.8125rem); /* etiquetas, índice y pie */
+
+    /* Ancla de las estampas, que van en una capa absoluta. `clip` y no
+       `hidden`: recorta lo que asoma por los lados sin crear un contenedor de
+       scroll. */
+    position: relative;
+    overflow-x: clip;
 
     background-color: var(--color-crema);
     padding-block: clamp(3.5rem, 8vw, 7rem) clamp(4rem, 9vw, 8rem);
@@ -300,6 +317,67 @@ const RETARDO_MAXIMO = 330; // ms
     align-items: baseline;
     gap: 0.75rem;
     white-space: nowrap;
+
+    /* El levantamiento al pasar por encima va en `translate` y no en
+       `transform` a propósito: `transform` lo ocupa el salto de aquí abajo, y
+       si compartieran propiedad uno borraría al otro. Separados se suman. */
+    transition: translate 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ---------------------------------------------------------------------
+     El salto del precio
+
+     Cuando la línea termina de revelarse, la cifra da un bote: sube, cae, y
+     rebota una segunda vez más corta, como cualquier cosa que aterriza. El
+     retardo es el del plato más el tiempo que tarda su revelado en posarse; si
+     saltara antes, saltaría mientras todavía va subiendo y no se leería como
+     un salto sino como un temblor.
+
+     Las medidas van en `em` para que la cifra pequeña de una variante bote
+     menos que la grande: el salto es proporcional a lo que salta.
+  --------------------------------------------------------------------- */
+  @keyframes menu-salto-precio {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    28% {
+      transform: translateY(-0.42em) scale(1.07);
+    }
+    52% {
+      transform: translateY(0) scale(0.97);
+    }
+    72% {
+      transform: translateY(-0.14em) scale(1.02);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .menu__plato[data-aparece='dentro'] .menu__precio {
+    animation: menu-salto-precio 760ms cubic-bezier(0.33, 0, 0.3, 1)
+      calc(var(--retardo, 0ms) + 460ms) both;
+  }
+
+  /* Y vuelve a asomarse cuando el ratón se para en el plato. Solo donde hay
+     ratón: en una pantalla táctil el `:hover` se queda pegado tras el toque. */
+  @media (hover: hover) {
+    .menu__plato:hover .menu__precio {
+      translate: 0 -0.22em;
+    }
+  }
+
+  /* Quien pide menos movimiento se queda con la cifra quieta. */
+  @media (prefers-reduced-motion: reduce) {
+    .menu__precio {
+      transition: none;
+    }
+
+    .menu__plato[data-aparece='dentro'] .menu__precio,
+    .menu__plato:hover .menu__precio {
+      animation: none;
+      translate: none;
+    }
   }
 
   /* Cada tamaño lleva su nombre encima, en pequeño: dos números seguidos sin
