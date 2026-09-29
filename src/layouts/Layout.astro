@@ -25,11 +25,9 @@ const PIEZAS = Array.from({ length: 10 }, (_, i) => `/assets_intro/derived/pizza
 // fuera: todo lo que les pasemos tiene que ser una URL absoluta, de ahí el
 // `site` de `astro.config.mjs`. La foto es la del horno.
 const canonica = new URL(Astro.url.pathname, Astro.site);
-const OG_IMAGEN = new URL('/Hero/dob_4-600.webp', Astro.site);
-// Gemela en JPEG del mismo encuadre: hay scrapers —WhatsApp, entre otros— que
-// todavía no abren WebP y se quedarían sin miniatura. Va como segunda opción,
-// que la primera es la que manda.
-const OG_IMAGEN_JPG = new URL('/Hero/dob_4-og.jpg', Astro.site);
+// La foto del horno, montada en apaisado por `scripts/prepare-og.mjs`. Una
+// sola y en JPEG: el retrato en WebP no daba tarjeta en media internet.
+const OG_IMAGEN = new URL('/Hero/dob_4-og.jpg', Astro.site);
 const OG_ALT = 'Pizza Ahumada Suprema saliendo del horno de Doble Cero.';
 ---
 
@@ -62,14 +60,9 @@ const OG_ALT = 'Pizza Ahumada Suprema saliendo del horno de Doble Cero.';
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:image" content={OG_IMAGEN} />
-		<meta property="og:image:type" content="image/webp" />
-		<meta property="og:image:width" content="600" />
-		<meta property="og:image:height" content="750" />
-		<meta property="og:image:alt" content={OG_ALT} />
-		<meta property="og:image" content={OG_IMAGEN_JPG} />
 		<meta property="og:image:type" content="image/jpeg" />
-		<meta property="og:image:width" content="900" />
-		<meta property="og:image:height" content="1125" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
 		<meta property="og:image:alt" content={OG_ALT} />
 
 		<meta name="twitter:card" content="summary_large_image" />

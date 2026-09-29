@@ -12,6 +12,7 @@
     "astro": "astro",
     "assets:intro": "node scripts/prepare-intro-assets.mjs",
     "assets:icons": "node scripts/prepare-icons.mjs",
+    "assets:og": "node scripts/prepare-og.mjs",
     "assets:hero": "node scripts/prepare-hero-assets.mjs"
   },
   "dependencies": {
