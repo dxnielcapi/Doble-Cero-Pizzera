@@ -8,7 +8,7 @@ export default defineConfig({
   // El dominio de producción. Hace falta para `Astro.site`: las etiquetas
   // Open Graph piden URLs absolutas —un `/Hero/...` relativo no le sirve a
   // WhatsApp ni a Facebook, que leen el HTML desde fuera— y de aquí salen.
-  site: 'https://doble-cero-pizzera.workers.dev',
+  site: 'https://doblecero.syle.studio',
 
   vite: {
     plugins: [tailwindcss()]
