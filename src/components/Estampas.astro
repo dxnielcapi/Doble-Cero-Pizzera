@@ -44,6 +44,21 @@ interface Props {
   ancho?: [number, number];
   /** Aire mínimo entre la pegatina y la columna de texto. */
   respiro?: string;
+  /**
+   * En qué pantallas se monta la capa.
+   *
+   * `ancho` y `movil` no son lo mismo con distinto tamaño: son dos maneras
+   * distintas de colocar una pegatina. En pantalla ancha sobra margen a los
+   * lados y la capa cubre la sección entera, que es lo que hace que parezcan
+   * repartidas a mano. En el móvil no hay margen —el texto va de canto a
+   * canto—, así que ahí la capa se monta sobre un hueco concreto que se sabe
+   * vacío, normalmente el aire que queda a los lados de un titular corto.
+   */
+  alcance?: 'siempre' | 'ancho' | 'estrecho' | 'movil' | 'holgado';
+  /** Por qué bordes salen. */
+  lados?: 'ambos' | 'izquierda' | 'derecha';
+  /** Franja vertical donde repartirlas, en % de la caja. Admite negativos. */
+  franja?: [number, number];
   /** Qué recortes de `assets_intro/derived/` se reparten. */
   logotipos?: string[];
 }
@@ -55,6 +70,9 @@ const {
   tope = '22vw',
   ancho: [ANCHO_MIN, ANCHO_MAX] = [96, 170],
   respiro = '1rem',
+  alcance = 'siempre',
+  lados = 'ambos',
+  franja: [FRANJA_INICIO, FRANJA_FIN] = [0, 100],
   logotipos: LOGOTIPOS = ['pizza_8.webp', 'pizza_9.webp', 'pizza_10.webp'],
 } = Astro.props;
 
@@ -97,10 +115,16 @@ const estampas = Array.from({ length: CUANTAS }, (_, i) => {
     src: LOGOTIPOS[i % LOGOTIPOS.length],
     // Alternar lados evita que el sorteo amontone tres seguidas en el mismo
     // borde, que es justo lo que delata que hay un sorteo.
-    lado: i % 2 === 0 ? 'izquierda' : 'derecha',
+    lado: lados === 'ambos' ? (i % 2 === 0 ? 'izquierda' : 'derecha') : lados,
     // Una por franja horizontal, moviéndose solo dentro de la suya: reparte a
-    // lo alto sin que dos se pisen.
-    alto: Number((((i + entre(azar(semilla, 1), 0.15, 0.85)) / CUANTAS) * 100).toFixed(2)),
+    // lo alto sin que dos se pisen. Todo dentro de `franja`, que es la parte de
+    // la caja que se sabe libre.
+    alto: Number(
+      (
+        FRANJA_INICIO +
+        ((i + entre(azar(semilla, 1), 0.15, 0.85)) / CUANTAS) * (FRANJA_FIN - FRANJA_INICIO)
+      ).toFixed(2),
+    ),
     // Cuánto se sale por su borde, en partes de su propio ancho.
     fuera: Number(entre(azar(semilla, 2), 0.26, 0.5).toFixed(3)),
     giro: Math.round(entre(azar(semilla, 3), -18, 18)),
@@ -112,7 +136,11 @@ const estampas = Array.from({ length: CUANTAS }, (_, i) => {
 }));
 ---
 
-<div class="estampas" aria-hidden="true" style={`--zona:${zona};--tope:${tope};--respiro:${respiro}`}>
+<div
+  class:list={['estampas', alcance !== 'siempre' && `estampas--${alcance}`]}
+  aria-hidden="true"
+  style={`--zona:${zona};--tope:${tope};--respiro:${respiro}`}
+>
   {
     estampas.map(({ src, lado, alto, fuera, giro, ancho, huella }) => (
       <img
@@ -188,5 +216,47 @@ const estampas = Array.from({ length: CUANTAS }, (_, i) => {
 
   .estampa--derecha {
     right: min(var(--asomo), var(--raya));
+  }
+
+  /* ---------------------------------------------------------------------
+     Los tramos
+
+     `ancho` y `estrecho` son complementarios y parten en 84rem. Ese número no
+     es el pliegue de siempre: es el ancho a partir del cual la cuenta de
+     `--raya` deja sitio de verdad en los márgenes de una caja de 78rem. Por
+     debajo, las pegatinas de borde existen pero salen todas fuera de campo, que
+     es exactamente lo que pasaba antes de partirlo —entre el pliegue y los
+     1330 px no se veía ni una—.
+
+     `movil` y `holgado` son la otra pareja complementaria, y parten en 42rem
+     porque es donde el pie se reordena: por debajo va en una columna con todo
+     alineado a la izquierda, así que lo libre es la mitad derecha; por encima
+     se abre en tres y lo libre pasa a ser el borde izquierdo por debajo del
+     logotipo, que es bajito y deja su columna vacía.
+
+     Se apagan con `display: none` y no solo con la cuenta: así el navegador
+     tampoco se descarga los recortes de la capa que no toca. */
+  @media (width < 84rem) {
+    .estampas--ancho {
+      display: none;
+    }
+  }
+
+  @media (width >= 84rem) {
+    .estampas--estrecho {
+      display: none;
+    }
+  }
+
+  @media (width >= 42rem) {
+    .estampas--movil {
+      display: none;
+    }
+  }
+
+  @media (width < 42rem) {
+    .estampas--holgado {
+      display: none;
+    }
   }
 </style>

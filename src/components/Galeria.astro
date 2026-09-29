@@ -78,6 +78,7 @@ const FASE = 0.31; // s
   {/* La zona intocable es el ancho de la rejilla: las pegatinas rondan la tira
       pero no llegan a solaparse con ninguna pizza ni con su precio. */}
   <Estampas
+    alcance="ancho"
     cuantas={4}
     semilla={733}
     zona="78rem"
@@ -87,7 +88,23 @@ const FASE = 0.31; // s
 
   <div class="galeria__ancho">
     <header class="galeria__cabecera">
-      <h2 class="galeria__titular" id="galeria-titulo" data-aparece>Del horno</h2>
+      {/* Mismo apaño que en la carta, y por lo mismo: el titular es lo único
+          que deja hueco a los lados cuando no hay márgenes. */}
+      <div class="galeria__portada">
+        <h2 class="galeria__titular" id="galeria-titulo" data-aparece>Del horno</h2>
+
+        <Estampas
+          alcance="estrecho"
+          cuantas={2}
+          semilla={628}
+          zona="100%"
+          tope="26vw"
+          ancho={[46, 68]}
+          franja={[-20, 0]}
+          respiro="0.6rem"
+          logotipos={['pizza_9.webp', 'pizza_4.webp']}
+        />
+      </div>
       <p class="galeria__entradilla" data-aparece>
         Seis de las nuestras, recién salidas.
         {/* La pista del gesto solo tiene sentido mientras haya gesto: en
@@ -179,6 +196,13 @@ const FASE = 0.31; // s
 
   .galeria__cabecera {
     text-align: center;
+  }
+
+  .galeria__portada {
+    position: relative;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
   }
 
   .galeria__titular {

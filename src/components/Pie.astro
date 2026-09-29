@@ -43,17 +43,40 @@ const ANIO = new Date().getFullYear();
 ---
 
 <footer class="pie" id="contacto">
-  {/* Aquí la columna intocable es el ancho útil entero: el logotipo arranca en
-      el margen izquierdo y los enlaces mueren en el derecho, así que no hay más
-      hueco que el que sobra por fuera de la caja. En pantalla ancha las
-      pegatinas asoman por los cantos de la banda oscura; en el resto, no hay
-      sitio y se quedan fuera de campo. */}
+  {/* Con el pie abierto en tres columnas, la primera solo lleva el logotipo
+      —dos centímetros de alto— y se queda vacía el resto de su altura. Ese es
+      el hueco: borde izquierdo, por debajo del logotipo y por encima de la
+      raya. De ahí `lados` y `franja`; `zona` no hace falta porque las otras dos
+      columnas empiezan pasada la mitad de la página.
+
+      La franja es estrecha y está medida, no puesta a ojo: el logotipo termina
+      entre el 34% y el 43% del alto del pie según el ancho de la ventana, y la
+      raya empieza en el 73%. Entre esas dos cifras solo cabe una pegatina, y
+      por eso va sola. Si se sube `cuantas` o `ancho`, vuelve a tocar la raya. */}
   <Estampas
-    cuantas={4}
+    alcance="holgado"
+    cuantas={1}
     semilla={904}
-    zona="110rem"
-    ancho={[72, 124]}
-    logotipos={['pizza_10.webp', 'pizza_9.webp']}
+    tope="12vw"
+    ancho={[52, 64]}
+    lados="izquierda"
+    franja={[46, 50]}
+    logotipos={['pizza_10.webp']}
+  />
+
+  {/* El pie es el único sitio donde en móvil sí sobra sitio: todo va alineado
+      a la izquierda, así que la mitad derecha está vacía. De ahí `lados`. La
+      franja se queda en la mitad de arriba para no toparse con «Volver
+      arriba», que sí llega al borde derecho. */}
+  <Estampas
+    alcance="movil"
+    cuantas={3}
+    semilla={471}
+    tope="28vw"
+    ancho={[56, 82]}
+    lados="derecha"
+    franja={[6, 56]}
+    logotipos={['pizza_10.webp', 'pizza_9.webp', 'pizza_8.webp']}
   />
 
   <div class="pie__ancho">

@@ -30,6 +30,7 @@ const RETARDO_MAXIMO = 330; // ms
   {/* Pegatinas por los márgenes. `--ancho-lectura` es la columna donde vive
       la carta: se la pasamos como zona intocable y ninguna llega a rozarla. */}
   <Estampas
+    alcance="ancho"
     cuantas={8}
     semilla={517}
     zona="78rem"
@@ -39,7 +40,29 @@ const RETARDO_MAXIMO = 330; // ms
 
   <div class="menu__ancho">
     <header class="menu__cabecera">
-      <h2 class="menu__titular" data-aparece>La carta</h2>
+      {/* Por debajo de 84rem la carta va de canto a canto y no queda margen por
+          donde asomar, así que las pegatinas se mudan al único hueco libre a
+          cualquier ancho: el aire a los lados del titular, que es corto.
+
+          El envoltorio se ciñe al texto (`max-content`), y por eso `zona` puede
+          ser `100%` —la columna intocable es el titular mismo, medido por el
+          navegador—. Ni factores a ojo ni contar letras: el titular crece con
+          la ventana y las pegatinas lo siguen solas. */}
+      <div class="menu__portada">
+        <h2 class="menu__titular" data-aparece>La carta</h2>
+
+        <Estampas
+          alcance="estrecho"
+          cuantas={2}
+          semilla={311}
+          zona="100%"
+          tope="26vw"
+          ancho={[48, 72]}
+          franja={[-20, 0]}
+          respiro="0.6rem"
+          logotipos={['pizza_8.webp', 'pizza_10.webp']}
+        />
+      </div>
       {ENTRADILLA && <p class="menu__entradilla" data-aparece>{ENTRADILLA}</p>}
 
       {/* Índice: en una carta larga, poder saltar a los postres sin recorrerla
@@ -174,6 +197,17 @@ const RETARDO_MAXIMO = 330; // ms
     margin-inline: auto;
     max-width: var(--ancho-lectura);
     text-align: center;
+  }
+
+  /* Ancla de las pegatinas de móvil: sin esto se colgarían de la sección
+     entera y acabarían a media carta. */
+  .menu__portada {
+    position: relative;
+    /* Ceñido al titular: es lo que convierte `zona: 100%` en «justo el ancho
+       de las letras», sin medirlas a mano. */
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
   }
 
   .menu__titular {
