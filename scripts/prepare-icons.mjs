@@ -1,8 +1,8 @@
 // Genera los iconos de la marca a partir del logo.
 //
 // El favicon que traía la plantilla era el de Astro. Este script lo sustituye
-// por el logo de la casa, pero no lo usa tal cual: `logo-dc-blanco.svg` es
-// blanco sobre transparente y en una pestaña clara no se ve nada. Aquí se monta
+// por el logo de la casa, pero no lo usa tal cual: el logotipo viene en el rojo
+// de la marca y sobre una pestaña clara pierde fuerza. Aquí se pinta en blanco
 // sobre un cuadrado del tinta de la marca, que es lo que se ve bien en los dos
 // temas.
 //
@@ -17,11 +17,11 @@
 import sharp from 'sharp';
 import { readFile, writeFile } from 'node:fs/promises';
 
-const LOGO = 'public/logo-dc-blanco.svg';
+const LOGO = 'public/doble-cero-logo.svg';
 const TINTA = '#1b120c';
 
 // La caja del logo, tal como la declara su propio `viewBox`.
-const LOGO_CAJA = { x: 31, y: 43, ancho: 1016, alto: 688 };
+const LOGO_CAJA = { x: 115, y: 97, ancho: 4529, alto: 3055 };
 
 // El lienzo cuadrado del icono y cuánto ocupa el logo dentro. El margen no es
 // coquetería: a 32 px el dibujo se come las esquinas redondeadas si llega al
@@ -37,7 +37,13 @@ const y = Math.round((LIENZO - alto) / 2);
 // poder anidarlo con su `viewBox` intacto y que el escalado lo haga el
 // navegador, sin tocar un solo trazado.
 const fuente = await readFile(LOGO, 'utf8');
-const dibujo = fuente.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+// El archivo deja el color al gusto de quien lo use (`currentColor`, que en la
+// web resuelven la barra y el pie). Aquí no hay de quién heredarlo: se fija el
+// blanco a mano antes de rasterizar.
+const dibujo = fuente
+  .replace(/^[\s\S]*?<svg[^>]*>/, '')
+  .replace(/<\/svg>\s*$/, '')
+  .replaceAll('currentColor', '#fff');
 
 const svg =
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${LIENZO} ${LIENZO}">` +

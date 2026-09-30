@@ -16,12 +16,14 @@
  */
 
 /**
- * `LogoDC_Blanco.svg` llegó aplanado —un único trazado blanco que cubre la caja
- * entera, es decir, un rectángulo—, así que este blanco está derivado de
- * `LogoDC.svg`: el dibujo hace de máscara y las contraformas se recortan. Si
- * algún día llega un blanco de verdad desde diseño, se cambia esta línea.
+ * El logotipo viene en el rojo de la marca, que sobre la barra oscura no se
+ * lee. En vez de guardar una copia teñida por cada sitio donde aparece —de ahí
+ * salía el blanco derivado que había antes— entra como máscara, igual que el
+ * glifo de Instagram: el dibujo recorta y el color lo pone la barra.
+ *
+ * Las medidas son las del `viewBox` del archivo, que va ceñido al dibujo.
  */
-const LOGO = { src: '/logo-dc-blanco.svg', ancho: 1016, alto: 688 };
+const LOGO = { src: '/doble-cero-logo.svg', ancho: 4529, alto: 3055 };
 
 /** El glifo y el texto llevan al mismo sitio: una sola fuente para los dos. */
 const INSTAGRAM = 'https://www.instagram.com/doble00_pizzeriaa/';
@@ -59,8 +61,12 @@ const DERECHA = [
       }
     </ul>
 
-    <a class="barra__logo" href="/">
-      <img src={LOGO.src} alt="Doble Cero" width={LOGO.ancho} height={LOGO.alto} />
+    <a class="barra__logo" href="/" aria-label="Doble Cero">
+      <span
+        class="barra__marca"
+        style={`--marca: url('${LOGO.src}'); --proporcion: ${LOGO.ancho} / ${LOGO.alto}`}
+        aria-hidden="true"
+      />
     </a>
 
     <ul class="barra__lado barra__lado--derecha">
@@ -201,10 +207,16 @@ const DERECHA = [
     line-height: 0;
   }
 
-  .barra__logo img {
+  /* Mismo trato que el glifo: el dibujo recorta y el color lo pone la barra. El
+     ancho sale de la proporción, así que si el logotipo cambia de caja basta
+     con tocar `LOGO` arriba. */
+  .barra__marca {
     display: block;
-    width: auto;
     height: var(--logo-alto);
+    aspect-ratio: var(--proporcion);
+    background-color: #fff;
+    mask: var(--marca) center / contain no-repeat;
+    -webkit-mask: var(--marca) center / contain no-repeat;
   }
 
   .barra__enlace:focus-visible,

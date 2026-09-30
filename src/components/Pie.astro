@@ -18,8 +18,8 @@
 
 import Estampas from './Estampas.astro';
 
-/** Mismo blanco derivado que usa la barra (ver el comentario de allí). */
-const LOGO = { src: '/logo-dc-blanco.svg', ancho: 1016, alto: 688 };
+/** Mismo archivo y mismo trato que en la barra: máscara, no imagen. */
+const LOGO = { src: '/doble-cero-logo.svg', ancho: 4529, alto: 3055 };
 
 const INSTAGRAM = 'https://www.instagram.com/doble00_pizzeriaa/';
 const ARROBA = '@doble00_pizzeriaa';
@@ -81,14 +81,11 @@ const ANIO = new Date().getFullYear();
 
   <div class="pie__ancho">
     <div class="pie__marca" data-aparece>
-      <img
+      <div
         class="pie__logo"
-        src={LOGO.src}
-        alt="Doble Cero"
-        width={LOGO.ancho}
-        height={LOGO.alto}
-        loading="lazy"
-        decoding="async"
+        style={`--marca: url('${LOGO.src}'); --proporcion: ${LOGO.ancho} / ${LOGO.alto}`}
+        role="img"
+        aria-label="Doble Cero"
       />
     </div>
 
@@ -185,8 +182,11 @@ const ANIO = new Date().getFullYear();
 
   .pie__logo {
     display: block;
-    width: auto;
     height: var(--logo-alto);
+    aspect-ratio: var(--proporcion);
+    background-color: #fff;
+    mask: var(--marca) center / contain no-repeat;
+    -webkit-mask: var(--marca) center / contain no-repeat;
   }
 
   .pie__bloque {
