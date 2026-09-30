@@ -2,24 +2,79 @@
 /**
  * Estampas — Doble Cero
  *
- * Los logotipos de `assets_intro` repartidos por los bordes de la página, como
- * pegatinas pegadas a mano: cada una asoma por su lado, ladeada y a medio salir
- * del encuadre.
+ * Los logotipos de `assets_intro` repartidos por los bordes de una sección,
+ * como pegatinas pegadas a mano: cada una asoma por su lado, ladeada y a medio
+ * salir del encuadre.
  *
  * El reparto se sortea aquí, en el servidor, con el mismo ruido reproducible
  * que usa la cortina. Es deliberado que no sea aleatorio en cada carga: así el
  * desorden es idéntico siempre y no hay diferencia entre lo que pinta el
- * servidor y lo que ve el navegador. Para cambiar el reparto, cambia `SEMILLA`.
+ * servidor y lo que ve el navegador. Para cambiar el reparto, cambia `semilla`.
  *
  * Entran con el mismo mecanismo que los textos (`data-aparece`), pero su
  * transición es otra: llegan grandes y más ladeadas de lo que acabarán, y se
  * asientan. Eso es lo que las hace leer como un sello y no como un fundido.
+ *
+ * Quien lo use tiene que poner `position: relative` y `overflow-x: clip` en su
+ * sección: lo primero ancla la capa, lo segundo recorta lo que asoma sin abrir
+ * scroll horizontal.
+ *
+ * ---------------------------------------------------------------------------
+ * La columna intocable (`zona`)
+ *
+ * En el hero las estampas pueden campar: el titular es un cartel y da igual que
+ * una pegatina le ronde. En la carta no: ahí hay texto que se lee, y una
+ * pegatina encima de un precio es un precio perdido. Por eso cada sección
+ * declara `zona`, el ancho centrado donde vive su texto, y ninguna estampa
+ * entra ahí —el CSS la empuja hacia fuera hasta dejarla fuera de campo si hace
+ * falta—. En una pantalla ancha sobra margen y asoman; en el móvil no hay
+ * margen que valga y desaparecen solas, sin media query que mantener.
  */
 
-const LOGOTIPOS = ['pizza_8.webp', 'pizza_9.webp', 'pizza_10.webp'];
+interface Props {
+  /** Cuántas pegatinas repartir a lo alto. */
+  cuantas?: number;
+  /** Cambia el reparto entero. */
+  semilla?: number;
+  /** Columna centrada intocable (cualquier medida CSS). El texto va aquí. */
+  zona?: string;
+  /** Tope de tamaño en anchos de ventana, para que en móvil no coman columna. */
+  tope?: string;
+  /** Tamaño en píxeles: [mínimo, máximo]. */
+  ancho?: [number, number];
+  /** Aire mínimo entre la pegatina y la columna de texto. */
+  respiro?: string;
+  /**
+   * En qué pantallas se monta la capa.
+   *
+   * `ancho` y `movil` no son lo mismo con distinto tamaño: son dos maneras
+   * distintas de colocar una pegatina. En pantalla ancha sobra margen a los
+   * lados y la capa cubre la sección entera, que es lo que hace que parezcan
+   * repartidas a mano. En el móvil no hay margen —el texto va de canto a
+   * canto—, así que ahí la capa se monta sobre un hueco concreto que se sabe
+   * vacío, normalmente el aire que queda a los lados de un titular corto.
+   */
+  alcance?: 'siempre' | 'ancho' | 'estrecho' | 'movil' | 'holgado';
+  /** Por qué bordes salen. */
+  lados?: 'ambos' | 'izquierda' | 'derecha';
+  /** Franja vertical donde repartirlas, en % de la caja. Admite negativos. */
+  franja?: [number, number];
+  /** Qué recortes de `assets_intro/derived/` se reparten. */
+  logotipos?: string[];
+}
 
-const CUANTAS = 7;
-const SEMILLA = 201;
+const {
+  cuantas: CUANTAS = 7,
+  semilla: SEMILLA = 201,
+  zona = '0rem',
+  tope = '22vw',
+  ancho: [ANCHO_MIN, ANCHO_MAX] = [96, 170],
+  respiro = '1rem',
+  alcance = 'siempre',
+  lados = 'ambos',
+  franja: [FRANJA_INICIO, FRANJA_FIN] = [0, 100],
+  logotipos: LOGOTIPOS = ['pizza_8.webp', 'pizza_9.webp', 'pizza_10.webp'],
+} = Astro.props;
 
 /** Ruido reproducible en [0,1). Solo corre en el servidor. */
 function azar(semilla: number, canal: number) {
@@ -29,6 +84,30 @@ function azar(semilla: number, canal: number) {
 
 const entre = (v: number, min: number, max: number) => min + v * (max - min);
 
+/**
+ * La huella de una pegatina girada.
+ *
+ * Al ladearla, su caja deja de medir lo que mide la imagen: una estampa de 148
+ * px a 18 grados ocupa cerca de 190, y esos ~20 px de más por cada lado son los
+ * que se metían dentro de la columna de texto. El giro es alrededor del centro,
+ * así que el exceso se reparte a partes iguales entre los dos costados.
+ *
+ * Devuelve el factor por el que hay que multiplicar el ancho para saber cuánto
+ * ocupa de verdad. Se calcula aquí y no en CSS —que ya tiene `cos()` y `sin()`—
+ * porque el giro es un número fijo decidido en el servidor: no hay nada que
+ * recalcular en el navegador.
+ *
+ * `RELACION` es el alto partido por el ancho del recorte más alargado de
+ * `assets_intro/derived/` (780 x 887). Se usa el peor caso para todas: afinar
+ * por imagen ganaría un par de píxeles y obligaría a leer los diez archivos.
+ */
+const RELACION = 1.2;
+
+function huella(giro: number) {
+  const radianes = (giro * Math.PI) / 180;
+  return Math.abs(Math.cos(radianes)) + RELACION * Math.abs(Math.sin(radianes));
+}
+
 const estampas = Array.from({ length: CUANTAS }, (_, i) => {
   const semilla = SEMILLA + i;
 
@@ -36,21 +115,34 @@ const estampas = Array.from({ length: CUANTAS }, (_, i) => {
     src: LOGOTIPOS[i % LOGOTIPOS.length],
     // Alternar lados evita que el sorteo amontone tres seguidas en el mismo
     // borde, que es justo lo que delata que hay un sorteo.
-    lado: i % 2 === 0 ? 'izquierda' : 'derecha',
+    lado: lados === 'ambos' ? (i % 2 === 0 ? 'izquierda' : 'derecha') : lados,
     // Una por franja horizontal, moviéndose solo dentro de la suya: reparte a
-    // lo alto sin que dos se pisen.
-    alto: Number((((i + entre(azar(semilla, 1), 0.15, 0.85)) / CUANTAS) * 100).toFixed(2)),
+    // lo alto sin que dos se pisen. Todo dentro de `franja`, que es la parte de
+    // la caja que se sabe libre.
+    alto: Number(
+      (
+        FRANJA_INICIO +
+        ((i + entre(azar(semilla, 1), 0.15, 0.85)) / CUANTAS) * (FRANJA_FIN - FRANJA_INICIO)
+      ).toFixed(2),
+    ),
     // Cuánto se sale por su borde, en partes de su propio ancho.
     fuera: Number(entre(azar(semilla, 2), 0.26, 0.5).toFixed(3)),
     giro: Math.round(entre(azar(semilla, 3), -18, 18)),
-    ancho: Math.round(entre(azar(semilla, 4), 96, 170)),
+    ancho: Math.round(entre(azar(semilla, 4), ANCHO_MIN, ANCHO_MAX)),
   };
-});
+}).map((estampa) => ({
+  ...estampa,
+  huella: Number(huella(estampa.giro).toFixed(3)),
+}));
 ---
 
-<div class="estampas" aria-hidden="true">
+<div
+  class:list={['estampas', alcance !== 'siempre' && `estampas--${alcance}`]}
+  aria-hidden="true"
+  style={`--zona:${zona};--tope:${tope};--respiro:${respiro}`}
+>
   {
-    estampas.map(({ src, lado, alto, fuera, giro, ancho }) => (
+    estampas.map(({ src, lado, alto, fuera, giro, ancho, huella }) => (
       <img
         class:list={['estampa', `estampa--${lado}`]}
         src={`/assets_intro/derived/${src}`}
@@ -58,7 +150,7 @@ const estampas = Array.from({ length: CUANTAS }, (_, i) => {
         loading="lazy"
         decoding="async"
         data-aparece
-        style={`--alto:${alto}%;--fuera:${fuera};--giro:${giro}deg;--ancho:${ancho}px`}
+        style={`--alto:${alto}%;--fuera:${fuera};--giro:${giro}deg;--ancho:${ancho}px;--huella:${huella}`}
       />
     ))
   }
@@ -78,7 +170,22 @@ const estampas = Array.from({ length: CUANTAS }, (_, i) => {
   .estampa {
     /* El tope en `vw` es lo que las mantiene en su sitio en móvil: a 170px
        fijos, en una pantalla estrecha tapan media columna. */
-    --medida: min(var(--ancho), 22vw);
+    --medida: min(var(--ancho), var(--tope, 22vw));
+
+    /* Lo más afuera que puede quedar su borde interior sin invadir la columna
+       de texto. Cuando la ventana da de sí, sobra sitio y no manda; cuando no,
+       manda ella y empuja la pegatina fuera de campo.
+
+       Lo que se descuenta no es el ancho de la imagen sino la mitad de su caja
+       girada más la mitad del ancho —que es donde cae su borde interior real—,
+       y encima el respiro. Medir con el ancho a secas es justo lo que hacía que
+       las esquinas ladeadas rozaran los platos de la carta. */
+    --raya: calc(
+      50% - var(--zona, 0rem) / 2 - var(--medida) * (1 + var(--huella, 1)) / 2 -
+        var(--respiro, 1rem)
+    );
+    /* Lo que la pegatina querría: asomar por el borde de la ventana. */
+    --asomo: calc(var(--medida) * var(--fuera) * -1);
 
     position: absolute;
     top: var(--alto);
@@ -98,13 +205,58 @@ const estampas = Array.from({ length: CUANTAS }, (_, i) => {
     --reposo: rotate(var(--giro));
   }
 
-  /* Se salen por su borde. Lo que sobra lo recorta el `overflow-x: clip` del
-     hero, así que asoman sin abrir scroll horizontal. */
+  /* Se salen por su borde. Lo que sobra lo recorta el `overflow-x: clip` de la
+     sección, así que asoman sin abrir scroll horizontal.
+
+     El `min()` es la regla entera: se queda con la más afuera de las dos
+     posiciones, así que respetar la columna de texto nunca es opcional. */
   .estampa--izquierda {
-    left: calc(var(--medida) * var(--fuera) * -1);
+    left: min(var(--asomo), var(--raya));
   }
 
   .estampa--derecha {
-    right: calc(var(--medida) * var(--fuera) * -1);
+    right: min(var(--asomo), var(--raya));
+  }
+
+  /* ---------------------------------------------------------------------
+     Los tramos
+
+     `ancho` y `estrecho` son complementarios y parten en 84rem. Ese número no
+     es el pliegue de siempre: es el ancho a partir del cual la cuenta de
+     `--raya` deja sitio de verdad en los márgenes de una caja de 78rem. Por
+     debajo, las pegatinas de borde existen pero salen todas fuera de campo, que
+     es exactamente lo que pasaba antes de partirlo —entre el pliegue y los
+     1330 px no se veía ni una—.
+
+     `movil` y `holgado` son la otra pareja complementaria, y parten en 42rem
+     porque es donde el pie se reordena: por debajo va en una columna con todo
+     alineado a la izquierda, así que lo libre es la mitad derecha; por encima
+     se abre en tres y lo libre pasa a ser el borde izquierdo por debajo del
+     logotipo, que es bajito y deja su columna vacía.
+
+     Se apagan con `display: none` y no solo con la cuenta: así el navegador
+     tampoco se descarga los recortes de la capa que no toca. */
+  @media (width < 84rem) {
+    .estampas--ancho {
+      display: none;
+    }
+  }
+
+  @media (width >= 84rem) {
+    .estampas--estrecho {
+      display: none;
+    }
+  }
+
+  @media (width >= 42rem) {
+    .estampas--movil {
+      display: none;
+    }
+  }
+
+  @media (width < 42rem) {
+    .estampas--holgado {
+      display: none;
+    }
   }
 </style>

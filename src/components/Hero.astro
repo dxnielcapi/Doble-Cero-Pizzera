@@ -5,8 +5,13 @@
  * Portada del menú, montada sobre la referencia de dirección de arte:
  *
  *   1. Titular gigante en rojo, con un párrafo centrado debajo.
- *   2. Una pieza principal a lo ancho.
+ *   2. Una pieza principal a lo ancho (apagada de momento: ver el bloque
+ *      comentado en la plantilla).
  *   3. Un bloque de recomendaciones con tres piezas en fila.
+ *
+ * Todo entra con el revelado por scroll del layout (`data-aparece`): primero el
+ * titular, luego el párrafo y por último las fotos, que suben un punto más que
+ * el texto. Las tres de abajo van escalonadas de izquierda a derecha.
  *
  * La foto cubre el hero entero —hasta el pie de las tres piezas—; lo que venga
  * después de la sección ya es el crema plano de la página. El corte no está
@@ -17,15 +22,35 @@
 import Estampas from './Estampas.astro';
 
 /**
- * La pieza de arriba es ambiente y no lleva nada escrito, así que puede
- * recortarse a la franja apaisada sin perder información. Es vertical (2:3) en
- * una caja de 5:2, o sea que solo se ve una rebanada estrecha:
- * `--encuadre-principal` elige cuál.
+ * Las fotos se sirven desde `public/Hero/` en WebP y en varios anchos, que
+ * genera `npm run assets:hero` a partir de los originales de `src/assets/hero/`
+ * —los originales no se publican—. Con `srcset` cada visitante se descarga solo
+ * la variante que su pantalla justifica: el móvil no carga la de escritorio.
+ *
+ * Si tocas los anchos, tócalos en los dos sitios: aquí y en el script.
+ */
+const juego = (nombre, anchos) =>
+  anchos.map((ancho) => `/Hero/${nombre}-${ancho}.webp ${ancho}w`).join(', ');
+
+/**
+ * La pieza de arriba es ambiente y no lleva nada escrito, así que se recorta a
+ * la franja apaisada sin perder información. Ese recorte ya viene hecho: el
+ * original es vertical (2:3) y el script lo sirve en 5:2, la proporción de la
+ * caja, para no mandar los dos tercios de foto que el navegador descartaría.
+ *
+ * O sea que el encuadre vertical ya no se decide aquí. Si quieres subir o bajar
+ * la rebanada, se toca `foco` en `scripts/prepare-hero-assets.mjs` y se vuelven
+ * a generar las variantes.
  */
 const PRINCIPAL = {
-  src: '/Hero/dob_1.jpg',
+  src: '/Hero/dob_1-1400.webp',
+  srcset: juego('dob_1', [800, 1400, 2100, 2800]),
+  /* Ocupa el ancho útil entero: 104.5rem con el tope puesto (110rem menos los
+     dos márgenes de 2.75rem), y todo el hueco disponible por debajo. */
+  sizes: '(width >= 110rem) 104.5rem, (width >= 48rem) calc(100vw - 5.5rem), calc(100vw - 2rem)',
+  /* Ya recortada: la proporción de origen es la de la caja. */
   ancho: 3000,
-  alto: 4500,
+  alto: 1200,
   nombre: 'Doble Cero Pizzerias',
   alt: 'Un cocinero emplata sobre la barra de la pizzería.',
 };
@@ -39,21 +64,30 @@ const PRINCIPAL = {
  */
 const RECOMENDACIONES = [
   {
-    src: '/Hero/dob_2.jpg',
+    archivo: 'dob_2',
     nombre: 'Pizza Quattro Stagioni',
     alt: 'Pizza recién sacada del horno de leña, con jamón de pavo ahumado, mozzarella fresco, aceitunas negras, pimiento morrón y champiñones.',
   },
   {
-    src: '/Hero/dob_3.jpg',
+    archivo: 'dob_3',
     nombre: 'Pizza Piña Sunset',
     alt: 'Primer plano de una pizza con cebolla morada, tocino, mozzarella fresco y piña ahumada.',
   },
   {
-    src: '/Hero/dob_4.jpg',
+    archivo: 'dob_4',
     nombre: 'Pizza Ahumada Suprema',
     alt: 'Pizza dentro del horno, con parmesano, cebolla caramelizada, miel con habanero, tocino y mozzarella fresco.',
   },
-].map((foto) => ({ ...foto, ancho: 1080, alto: 1350 }));
+].map((foto) => ({
+  ...foto,
+  src: `/Hero/${foto.archivo}-1080.webp`,
+  srcset: juego(foto.archivo, [600, 820, 1080]),
+  /* Tres columnas del ancho útil hasta el pliegue; a partir de ahí se apilan y
+     cada una pasa a ocupar la ventana menos los márgenes. */
+  sizes: '(width >= 110rem) 33rem, (width >= 48rem) 31vw, calc(100vw - 2rem)',
+  ancho: 1080,
+  alto: 1350,
+}));
 
 /**
  * El párrafo va cortado a mano, un elemento por línea. La referencia no reparte
@@ -77,17 +111,26 @@ const RESENA = [
       <h1 class="hero__titular" data-aparece>Menu</h1>
       <p class="hero__resena" data-aparece set:html={RESENA.join('<br />')} />
 
-      <figure class="hero__pieza hero__pieza--principal">
+      {/* Apagada a la espera de la foto definitiva. Se comenta —y no se
+          esconde con CSS— para que el navegador tampoco se la descargue.
+          Cuando llegue la nueva: se cambian los archivos de `public/Hero/`,
+          se ajusta `PRINCIPAL` si cambia la proporción y se descomenta.
+
+      <figure class="hero__pieza hero__pieza--principal" data-aparece>
         <img
           class="hero__imagen"
           src={PRINCIPAL.src}
+          srcset={PRINCIPAL.srcset}
+          sizes={PRINCIPAL.sizes}
           alt={PRINCIPAL.alt}
           width={PRINCIPAL.ancho}
           height={PRINCIPAL.alto}
+          fetchpriority="high"
           decoding="async"
         />
         <figcaption class="hero__nombre">{PRINCIPAL.nombre}</figcaption>
       </figure>
+      */}
     </div>
   </div>
 
@@ -97,12 +140,14 @@ const RESENA = [
 
       <ul class="hero__fila">
         {
-          RECOMENDACIONES.map(({ src, nombre, alt, ancho, alto }) => (
+          RECOMENDACIONES.map(({ src, srcset, sizes, nombre, alt, ancho, alto }, i) => (
             <li>
-              <figure class="hero__pieza">
+              <figure class="hero__pieza" data-aparece style={`--paso: ${(i + 1) * 110}ms`}>
                 <img
                   class="hero__imagen"
                   src={src}
+                  srcset={srcset}
+                  sizes={sizes}
                   alt={alt}
                   width={ancho}
                   height={alto}
@@ -148,7 +193,11 @@ const RESENA = [
     --interlinea-rotulo: 1.05;
 
     --pieza-principal: 5 / 2; /* proporción de la franja de arriba */
-    --encuadre-principal: center 45%; /* qué rebanada de dob_1 se ve */
+    /* El encuadre de dob_1 lo aplica el script al recortar, no esta capa: la
+       foto ya llega en 5:2 y `cover` no tiene nada que recortar. Se queda como
+       red de seguridad por si algún día `--pieza-principal` deja de coincidir
+       con la proporción que genera el script. */
+    --encuadre-principal: center;
     --pieza: 4 / 5; /* la de origen de las tres: recortar borra sus rótulos */
     --encuadre: center;
 
@@ -158,8 +207,13 @@ const RESENA = [
     position: relative;
     overflow-x: clip;
 
-    /* La foto va sin tratar, como en la referencia. */
-    background-image: url('/Hero/Background.jpg');
+    /* La foto va sin tratar, como en la referencia. Se parte de la variante
+       ligera: el fondo va a sangre, así que quien manda aquí es el ancho de la
+       ventana y no la caja de contenido. La grande entra más abajo.
+
+       Aquí va el WebP, que lo entiende todo el mundo; el AVIF entra más abajo,
+       en su propio `@supports`. */
+    background-image: url('/Hero/Background-900.webp');
     background-position: var(--foco);
     background-size: cover;
   }
@@ -211,6 +265,11 @@ const RESENA = [
   /* La caja fija la proporción y recorta; la imagen la rellena. `relative` para
      que el rótulo del hover se cuelgue de ella. */
   .hero__pieza {
+    /* Suben un poco más que el texto y llegan mínimamente pasadas de tamaño,
+       para que la foto se asiente en vez de encenderse de golpe. El escalón es
+       pequeño a propósito: a partir de ahí ya no es un revelado, es un zoom. */
+    --entrada: translateY(1.75rem) scale(1.02);
+
     position: relative;
     overflow: hidden;
     margin: 0;
@@ -276,6 +335,9 @@ const RESENA = [
   }
 
   .hero__pieza--principal {
+    /* Cierra la entrada de la cabecera: titular, párrafo y por último la foto. */
+    --retardo: 240ms;
+
     margin-top: clamp(1.75rem, 4vw, 3.5rem);
     aspect-ratio: var(--pieza-principal);
   }
@@ -311,6 +373,13 @@ const RESENA = [
     text-align: center;
   }
 
+  /* El escalonado de izquierda a derecha lo trae cada pieza en `--paso`; aquí
+     se decide si se aplica. Va así y no en línea porque en móvil hay que poder
+     apagarlo, y a un estilo en línea no le gana ninguna regla. */
+  .hero__fila .hero__pieza {
+    --retardo: var(--paso, 0ms);
+  }
+
   .hero__fila {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -318,6 +387,35 @@ const RESENA = [
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+
+  /* Por debajo de este ancho la de 900 px ya cubre incluso pantallas 2x, y son
+     160 kB menos en el móvil, que es donde más duelen. */
+  @media (width >= 56rem) {
+    .hero {
+      background-image: url('/Hero/Background-1800.webp');
+    }
+  }
+
+  /* El fondo en AVIF: un tercio del peso del WebP y algo más fiel al original.
+     Va en un `@supports` y no como segunda declaración detrás del WebP porque
+     el minificador da por soportado `image-set()` con `type()` en todo el
+     abanico de destino y se come la línea de reserva —y entonces los que
+     entienden `image-set()` pero no `type()`, Safari 16 entre ellos, se
+     quedarían sin fondo. Un bloque `@supports` no lo puede plegar.
+
+     Al ir después, gana por orden a las dos reglas de arriba; dentro, la del
+     media query gana a la de base igual que fuera. */
+  @supports (background-image: image-set(url('/Hero/Background-900.avif') type('image/avif'))) {
+    .hero {
+      background-image: image-set(url('/Hero/Background-900.avif') type('image/avif'));
+    }
+
+    @media (width >= 56rem) {
+      .hero {
+        background-image: image-set(url('/Hero/Background-1800.avif') type('image/avif'));
+      }
+    }
   }
 
   /* Los cortes del párrafo están calculados para el ancho de escritorio; más
@@ -334,6 +432,13 @@ const RESENA = [
   @media (width < 48rem) {
     .hero__fila {
       grid-template-columns: 1fr;
+    }
+
+    /* El escalonado de izquierda a derecha solo dice algo cuando las tres se
+       ven a la vez. Apiladas, cada una entra en su propio momento y el retardo
+       heredado solo la hace llegar tarde a su cita. */
+    .hero__fila .hero__pieza {
+      --retardo: 0ms;
     }
   }
 </style>

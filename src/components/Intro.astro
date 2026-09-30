@@ -358,14 +358,5 @@ const relleno = Array.from({ length: CASILLAS + 10 }, (_, i) =>
     }
 
     void correr();
-
-    // Los originales a resolución completa los necesita el hero, no la cortina:
-    // se piden aparte para no retrasar la animación.
-    addEventListener('load', () => {
-      for (const imagen of imagenes) {
-        const url = imagen.getAttribute('src')!.replace('/derived/', '/');
-        fetch(url, { priority: 'low' } as RequestInit).catch(() => {});
-      }
-    });
   }
 </script>

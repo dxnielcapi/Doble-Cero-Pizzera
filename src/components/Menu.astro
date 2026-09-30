@@ -1,0 +1,505 @@
+---
+/**
+ * Menu — Doble Cero
+ *
+ * La carta. No decide nada del contenido: todo sale de `src/data/menu.ts`, y
+ * este archivo solo se ocupa de cómo se ve.
+ *
+ * El dibujo es el de una carta impresa: cada plato es una línea con el nombre a
+ * la izquierda, el precio a la derecha y una fila de puntos uniéndolos. Los
+ * ingredientes van debajo, en menor y más apagados, para que la vista pueda
+ * saltar de nombre a nombre sin leerlos.
+ *
+ * Va sobre el crema plano de la página —la foto se acaba con el hero—, así que
+ * aquí la tinta es oscura y el rojo se guarda para los títulos y lo destacado.
+ */
+
+import Estampas from './Estampas.astro';
+import { SECCIONES, ENTRADILLA, PIE, formatearPrecio } from '../data/menu';
+
+/**
+ * El escalonado del revelado se cuenta por sección, no por página: si fuera
+ * corrido, los platos del final acumularían un retardo de segundos y llegarían
+ * tarde a su propia entrada. El tope evita que una sección larga se alargue.
+ */
+const RETARDO = 55; // ms entre plato y plato
+const RETARDO_MAXIMO = 330; // ms
+---
+
+<section class="menu" id="menu">
+  {/* Pegatinas por los márgenes. `--ancho-lectura` es la columna donde vive
+      la carta: se la pasamos como zona intocable y ninguna llega a rozarla. */}
+  <Estampas
+    alcance="ancho"
+    cuantas={8}
+    semilla={517}
+    zona="78rem"
+    ancho={[84, 148]}
+    logotipos={['pizza_4.webp', 'pizza_8.webp', 'pizza_10.webp']}
+  />
+
+  <div class="menu__ancho">
+    <header class="menu__cabecera">
+      {/* Por debajo de 84rem la carta va de canto a canto y no queda margen por
+          donde asomar, así que las pegatinas se mudan al único hueco libre a
+          cualquier ancho: el aire a los lados del titular, que es corto.
+
+          El envoltorio se ciñe al texto (`max-content`), y por eso `zona` puede
+          ser `100%` —la columna intocable es el titular mismo, medido por el
+          navegador—. Ni factores a ojo ni contar letras: el titular crece con
+          la ventana y las pegatinas lo siguen solas. */}
+      <div class="menu__portada">
+        <h2 class="menu__titular" data-aparece>La carta</h2>
+
+        <Estampas
+          alcance="estrecho"
+          cuantas={2}
+          semilla={311}
+          zona="100%"
+          tope="26vw"
+          ancho={[48, 72]}
+          franja={[-20, 0]}
+          respiro="0.6rem"
+          logotipos={['pizza_8.webp', 'pizza_10.webp']}
+        />
+      </div>
+      {ENTRADILLA && <p class="menu__entradilla" data-aparece>{ENTRADILLA}</p>}
+
+      {/* Índice: en una carta larga, poder saltar a los postres sin recorrerla
+          entera. Los anclajes caen bajo la barra fija gracias al
+          `scroll-padding` de `global.css`. */}
+      <nav class="menu__indice" aria-label="Secciones de la carta" data-aparece>
+        <ul>
+          {
+            SECCIONES.map(({ id, titulo }) => (
+              <li>
+                <a href={`#${id}`}>{titulo}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </header>
+
+    {
+      SECCIONES.map(({ id, titulo, entradilla, platos }) => (
+        <section class="menu__seccion" id={id} aria-labelledby={`${id}-titulo`}>
+          <div class="menu__rotulo" data-aparece>
+            <h3 class="menu__nombre-seccion" id={`${id}-titulo`}>
+              {titulo}
+            </h3>
+            {entradilla && <p class="menu__nota">{entradilla}</p>}
+          </div>
+
+          <ul class="menu__lista">
+            {platos.map((plato, i) => {
+              // Lo que no se cobra aparte —los toppings, que van incluidos— se
+              // queda en el nombre solo: unos puntos que no llevan a ninguna
+              // cifra parecen un precio que se ha perdido por el camino.
+              const variantes = plato.variantes ?? [];
+              const cobra = variantes.length > 0 || plato.precio !== undefined;
+
+              return (
+                <li
+                  class="menu__plato"
+                  data-aparece
+                  data-destacado={plato.destacado ? '' : undefined}
+                  style={`--retardo: ${Math.min(i * RETARDO, RETARDO_MAXIMO)}ms`}
+                >
+                  <p class="menu__linea">
+                    <span class="menu__plato-nombre">{plato.nombre}</span>
+                    {cobra && (
+                      <>
+                        {/* Los puntos son decoración pura: quien escucha la
+                            página oye el nombre y el precio seguidos, sin
+                            ruido. */}
+                        <span class="menu__puntos" aria-hidden="true" />
+                        <span class="menu__precio">
+                          {variantes.length ? (
+                            variantes.map(({ etiqueta, precio }) => (
+                              <span class="menu__variante">
+                                <span class="menu__variante-etiqueta">{etiqueta}</span>
+                                {formatearPrecio(precio)}
+                              </span>
+                            ))
+                          ) : (
+                            formatearPrecio(plato.precio!)
+                          )}
+                        </span>
+                      </>
+                    )}
+                  </p>
+
+                  {plato.descripcion && <p class="menu__ingredientes">{plato.descripcion}</p>}
+
+                  {plato.etiquetas && plato.etiquetas.length > 0 && (
+                    <ul class="menu__etiquetas">
+                      {plato.etiquetas.map((etiqueta) => (
+                        <li class="menu__etiqueta">{etiqueta}</li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))
+    }
+
+    {PIE && <p class="menu__pie" data-aparece>{PIE}</p>}
+  </div>
+</section>
+
+<style>
+  /* ---------------------------------------------------------------------
+     Mandos de la carta. Todo lo que se retoca a ojo vive aquí.
+  --------------------------------------------------------------------- */
+  .menu {
+    --ancho-util: 110rem; /* el mismo del hero y la barra: comparten eje */
+    --margen: clamp(1rem, 2.4vw, 2.75rem);
+
+    /* La carta se lee, no se mira de lejos: aunque el hero llegue a 110rem, el
+       texto se estrecha para que ninguna línea se haga interminable. */
+    --ancho-lectura: 78rem;
+
+    --columnas: 2; /* platos en paralelo en pantalla ancha */
+    --hueco-columnas: clamp(2rem, 5vw, 5rem);
+    --hueco-filas: clamp(1.25rem, 2.2vw, 1.9rem);
+
+    --titular: clamp(2.75rem, 9vw, 8rem);
+    --entradilla: clamp(0.9rem, 1.15vw, 1.125rem);
+    --rotulo: clamp(1.6rem, 3.2vw, 2.9rem);
+    --plato: clamp(1rem, 1.35vw, 1.3rem);
+    --ingredientes: clamp(0.8125rem, 1vw, 0.95rem);
+    --menudo: clamp(0.6875rem, 0.85vw, 0.8125rem); /* etiquetas, índice y pie */
+
+    /* Ancla de las estampas, que van en una capa absoluta. `clip` y no
+       `hidden`: recorta lo que asoma por los lados sin crear un contenedor de
+       scroll. */
+    position: relative;
+    overflow-x: clip;
+
+    background-color: var(--color-crema);
+    padding-block: clamp(3.5rem, 8vw, 7rem) clamp(4rem, 9vw, 8rem);
+    color: var(--color-tinta);
+  }
+
+  .menu__ancho {
+    margin-inline: auto;
+    max-width: var(--ancho-util);
+    padding-inline: var(--margen);
+  }
+
+  /* --------------------------------------------------------------- Cabecera */
+
+  .menu__cabecera {
+    margin-inline: auto;
+    max-width: var(--ancho-lectura);
+    text-align: center;
+  }
+
+  /* Ancla de las pegatinas de móvil: sin esto se colgarían de la sección
+     entera y acabarían a media carta. */
+  .menu__portada {
+    position: relative;
+    /* Ceñido al titular: es lo que convierte `zona: 100%` en «justo el ancho
+       de las letras», sin medirlas a mano. */
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  .menu__titular {
+    margin: 0;
+    color: var(--color-rojo);
+    font-size: var(--titular);
+    font-weight: 900;
+    line-height: 0.85;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+
+  .menu__entradilla {
+    --retardo: 120ms;
+
+    margin: clamp(0.85rem, 1.8vw, 1.4rem) auto 0;
+    max-width: 46rem;
+    color: color-mix(in srgb, var(--color-tinta) 78%, transparent);
+    font-size: var(--entradilla);
+    font-weight: 500;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .menu__indice {
+    --retardo: 200ms;
+
+    margin-top: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .menu__indice ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem clamp(0.75rem, 2vw, 1.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .menu__indice a {
+    display: inline-block;
+    padding-block: 0.35rem;
+    color: color-mix(in srgb, var(--color-tinta) 65%, transparent);
+    font-size: var(--menudo);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 220ms ease;
+  }
+
+  .menu__indice a:hover,
+  .menu__indice a:focus-visible {
+    color: var(--color-rojo);
+  }
+
+  /* --------------------------------------------------------------- Secciones */
+
+  .menu__seccion {
+    margin-inline: auto;
+    margin-block-start: clamp(2.75rem, 6vw, 5rem);
+    max-width: var(--ancho-lectura);
+  }
+
+  /* Un filete de oro bajo el título separa las secciones sin meter una caja:
+     la carta sigue leyéndose como una sola hoja. */
+  .menu__rotulo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.35rem 1.5rem;
+    padding-block-end: clamp(0.6rem, 1.2vw, 1rem);
+    border-block-end: 1px solid color-mix(in srgb, var(--color-oro) 55%, transparent);
+    margin-block-end: clamp(1.4rem, 2.8vw, 2.25rem);
+  }
+
+  .menu__nombre-seccion {
+    margin: 0;
+    color: var(--color-verde);
+    font-size: var(--rotulo);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+
+  .menu__nota {
+    margin: 0;
+    color: color-mix(in srgb, var(--color-tinta) 62%, transparent);
+    font-size: var(--ingredientes);
+    font-weight: 500;
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  .menu__lista {
+    display: grid;
+    grid-template-columns: repeat(var(--columnas), minmax(0, 1fr));
+    gap: var(--hueco-filas) var(--hueco-columnas);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* ------------------------------------------------------------------ Plato */
+
+  .menu__linea {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin: 0;
+    font-size: var(--plato);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .menu__plato-nombre {
+    /* Sin encoger: los puntos son quienes ceden el espacio, no el nombre. */
+    flex: 0 1 auto;
+  }
+
+  .menu__plato[data-destacado] .menu__plato-nombre {
+    color: var(--color-rojo);
+  }
+
+  /* El relleno de puntos de toda la vida. `border` en vez de repetir el
+     carácter «.»: así el sembrado es parejo y no se lo lleva la selección de
+     texto. Sube un pelo porque la línea de base cae bajo el ojo de la letra. */
+  .menu__puntos {
+    flex: 1 1 1.5rem;
+    min-width: 1.5rem;
+    translate: 0 -0.28em;
+    border-block-end: 1px dotted color-mix(in srgb, var(--color-tinta) 38%, transparent);
+  }
+
+  .menu__precio {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: baseline;
+    gap: 0.75rem;
+    white-space: nowrap;
+
+    /* El levantamiento al pasar por encima va en `translate` y no en
+       `transform` a propósito: `transform` lo ocupa el salto de aquí abajo, y
+       si compartieran propiedad uno borraría al otro. Separados se suman. */
+    transition: translate 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ---------------------------------------------------------------------
+     El salto del precio
+
+     Cuando la línea termina de revelarse, la cifra da un bote: sube, cae, y
+     rebota una segunda vez más corta, como cualquier cosa que aterriza. El
+     retardo es el del plato más el tiempo que tarda su revelado en posarse; si
+     saltara antes, saltaría mientras todavía va subiendo y no se leería como
+     un salto sino como un temblor.
+
+     Las medidas van en `em` para que la cifra pequeña de una variante bote
+     menos que la grande: el salto es proporcional a lo que salta.
+  --------------------------------------------------------------------- */
+  @keyframes menu-salto-precio {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    28% {
+      transform: translateY(-0.42em) scale(1.07);
+    }
+    52% {
+      transform: translateY(0) scale(0.97);
+    }
+    72% {
+      transform: translateY(-0.14em) scale(1.02);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .menu__plato[data-aparece='dentro'] .menu__precio {
+    animation: menu-salto-precio 760ms cubic-bezier(0.33, 0, 0.3, 1)
+      calc(var(--retardo, 0ms) + 460ms) both;
+  }
+
+  /* Y vuelve a asomarse cuando el ratón se para en el plato. Solo donde hay
+     ratón: en una pantalla táctil el `:hover` se queda pegado tras el toque. */
+  @media (hover: hover) {
+    .menu__plato:hover .menu__precio {
+      translate: 0 -0.22em;
+    }
+  }
+
+  /* Quien pide menos movimiento se queda con la cifra quieta. */
+  @media (prefers-reduced-motion: reduce) {
+    .menu__precio {
+      transition: none;
+    }
+
+    .menu__plato[data-aparece='dentro'] .menu__precio,
+    .menu__plato:hover .menu__precio {
+      animation: none;
+      translate: none;
+    }
+  }
+
+  /* Cada tamaño lleva su nombre encima, en pequeño: dos números seguidos sin
+     rótulo no dicen cuál es cuál. */
+  .menu__variante {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.15;
+  }
+
+  .menu__variante-etiqueta {
+    color: color-mix(in srgb, var(--color-tinta) 55%, transparent);
+    font-size: var(--menudo);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .menu__ingredientes {
+    margin: 0.35rem 0 0;
+    /* Se corta antes que el precio: la descripción no debe llegar a meterse
+       debajo de las cifras. */
+    max-width: 92%;
+    color: color-mix(in srgb, var(--color-tinta) 68%, transparent);
+    font-size: var(--ingredientes);
+    font-weight: 500;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+
+  .menu__etiquetas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.55rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .menu__etiqueta {
+    padding: 0.2rem 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--color-verde) 35%, transparent);
+    border-radius: 999px;
+    color: var(--color-verde);
+    font-size: var(--menudo);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .menu__pie {
+    margin: clamp(3rem, 6vw, 5rem) auto 0;
+    max-width: var(--ancho-lectura);
+    color: color-mix(in srgb, var(--color-tinta) 55%, transparent);
+    font-size: var(--menudo);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  /* En cuanto las dos columnas dejan de caber, la carta pasa a hoja única: un
+     nombre largo con su precio no sobrevive a media pantalla. */
+  @media (width < 64rem) {
+    .menu {
+      --columnas: 1;
+    }
+
+    .menu__ancho {
+      max-width: var(--ancho-lectura);
+    }
+  }
+
+  /* Sitio para el precio antes que para los puntos: si el nombre y las dos
+     variantes no caben en una línea, el relleno desaparece y el precio baja. */
+  @media (width < 30rem) {
+    .menu__linea {
+      flex-wrap: wrap;
+    }
+
+    .menu__puntos {
+      display: none;
+    }
+
+    .menu__precio {
+      gap: 1rem;
+    }
+  }
+</style>

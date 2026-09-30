@@ -1,0 +1,135 @@
+{
+  "negocio": "Doble Cero Pizzeria",
+  "nota_general": "TODAS NUESTRAS PIZZAS TIENEN UNA MEDIDA DE 32CM DE DIAMENTRO APROX",
+  "moneda": "MXN",
+  "categorias": [
+    {
+      "nombre": "Pizzas",
+      "productos": [
+        {
+          "nombre": "PIZZA MARGARITA",
+          "precio": 169,
+          "precio_texto": "$169",
+          "descripcion": "Salsa de Tomate, Albahaca y Queso Mozzarella."
+        },
+        {
+          "nombre": "PIZZA QUATTRO STAGIONI",
+          "precio": 199,
+          "precio_texto": "$199",
+          "descripcion": "Salsa de tomate, Queso Mozzarella, Champiñon, Aceituna Negra, Jamón, Pimiento Morron y Parmesano"
+        },
+        {
+          "nombre": "PIZZA BOSCAIOLA",
+          "precio": 199,
+          "precio_texto": "$199",
+          "descripcion": "Salsa de tomate, Queso Mozzarella, Champiñones preparados de la casa, y aceitunas negras, con una cobertura de Queso Parmesano."
+        },
+        {
+          "nombre": "PIZZA AHUMADA SUPREMA",
+          "precio": 229,
+          "precio_texto": "$229",
+          "descripcion": "Salsa de tomate, Queso Mozzarella, Parmesano, Tocino, Cebolla Caramelizada y Miel con. Habanero"
+        },
+        {
+          "nombre": "PIZZA LA ROJITA",
+          "precio": 229,
+          "precio_texto": "$229",
+          "descripcion": "Salsa de tomate, Queso Mozzarella, Chorizo, Peperoni, Pimiento Rojo y Rajas."
+        },
+        {
+          "nombre": "PIZZA PIÑA SUNSET",
+          "precio": 229,
+          "precio_texto": "$229",
+          "descripcion": "Salsa de tomate , Queso Mozzarella, Piña Ahumada, Jamón, Cebolla Morada y Tocino."
+        },
+        {
+          "nombre": "PIZZA PEPERONI",
+          "precio": 179,
+          "precio_texto": "$179",
+          "descripcion": "Salsa de tomate, Queso Mozzarella, Parmesano y Peperoni"
+        }
+      ]
+    },
+    {
+      "nombre": "Postres",
+      "productos": [
+        {
+          "nombre": "BARQUILLO AHUMADO",
+          "precio": 110,
+          "precio_texto": "$110",
+          "descripcion": "Tibias manzanas caramelizadas lentamente en mantequilla y canela, envueltas en nuestra masa de pizza dorada y horneada en forma de paste. Coronado con cremoso helado de vainilla y terminado con salsa de chocolate"
+        },
+        {
+          "nombre": "DULCE TENTAZIONE",
+          "precio": 179,
+          "precio_texto": "$179",
+          "descripcion": "Nuestra masa de pizza recién horneada, cubierta generosamente con una base de Nutella cremosa. Y combinación de plátano y fresa con nuez espolvoreada."
+        },
+        {
+          "nombre": "PIZZA FRUTTI DI BOSCO",
+          "precio": 169,
+          "precio_texto": "$169",
+          "descripcion": "Base de mermelada de frutos rojos artesanal de dulzor equilibrado, coronada con suaves perlas de queso crema y trozos crujientes de galleta de vainilla tostada. Finalizada al centro con un corazón de bombones gratinados al momento."
+        }
+      ]
+    },
+    {
+      "nombre": "Bebidas",
+      "productos": [
+        {
+          "nombre": "CLERICOT 1 LITRO",
+          "precio": 169,
+          "precio_texto": "$169",
+          "descripcion": "Vino Merlot con agua mineral y refresco de sabor, servido con hielo y frutas frescas en trozos: manzana y fresa."
+        },
+        {
+          "nombre": "COPA DE CLERICOT (300 ML)",
+          "precio": 89,
+          "precio_texto": "$89",
+          "descripcion": ""
+        },
+        {
+          "nombre": "APEROL SPRITZ 1LT",
+          "precio": 199,
+          "precio_texto": "$199",
+          "descripcion": "Aperol®, vino espumoso Cinzano®, hielo y frutas frescas en trozos: naranja y cerezas."
+        },
+        {
+          "nombre": "COPA DE APPEROL (375 ML)",
+          "precio": 135,
+          "precio_texto": "$135",
+          "descripcion": ""
+        },
+        {
+          "nombre": "COCACOLA (355 ML)",
+          "precio": 35,
+          "precio_texto": "$35",
+          "descripcion": ""
+        },
+        {
+          "nombre": "AGUA MINERAL (350 ML)",
+          "precio": 35,
+          "precio_texto": "$35",
+          "descripcion": ""
+        },
+        {
+          "nombre": "CERVEZA STRELLA ARTOIS (330 ML)",
+          "precio": 45,
+          "precio_texto": "$45",
+          "descripcion": ""
+        }
+      ]
+    },
+    {
+      "nombre": "Toppings",
+      "titulo_seccion": "TOPPINGS A ELEGIR 2 POR PIZZA",
+      "regla": "2 por pizza",
+      "productos": [
+        { "nombre": "Chimichurri", "emoji": "🌿", "precio": null },
+        { "nombre": "Rajas", "emoji": "🌶️", "precio": null },
+        { "nombre": "Miel con habanero", "emoji": "🍯", "precio": null },
+        { "nombre": "Mix de chiles secos", "emoji": "🔥", "precio": null }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,417 @@
+---
+/**
+ * Galería — Doble Cero
+ *
+ * Una tira corta con los recortes de las pizzas, pensada para el pulgar: en el
+ * móvil es un carrusel que se arrastra de lado, con la siguiente pieza siempre
+ * asomando por el borde para que se vea que hay más. A partir del pliegue deja
+ * de ser carrusel y pasa a rejilla, porque en pantalla ancha arrastrar de lado
+ * es un gesto que nadie hace.
+ *
+ * No trae ni una imagen nueva: son los mismos recortes que usa la cortina de
+ * entrada (`assets_intro/derived/`), que el layout ya precarga y que a estas
+ * alturas llevan un rato en caché. La galería, por tanto, no cuesta descarga.
+ *
+ * Los nombres y los precios no se escriben aquí: se buscan en `src/data/menu.ts`
+ * por el nombre del plato. Si alguien sube un precio en la carta, la galería lo
+ * sigue sola; y si le cambia el nombre a una pizza, la compilación se rompe en
+ * vez de dejar una etiqueta mintiendo.
+ */
+
+import Estampas from './Estampas.astro';
+import { SECCIONES, formatearPrecio } from '../data/menu';
+
+const CARTA = SECCIONES.find((seccion) => seccion.id === 'pizzas')?.platos ?? [];
+
+function enLaCarta(nombre: string) {
+  const plato = CARTA.find((p) => p.nombre === nombre);
+  if (!plato) {
+    throw new Error(
+      `Galería: «${nombre}» ya no está en la sección de pizzas de src/data/menu.ts. ` +
+        'Corrige el nombre en Galeria.astro o quita la pieza.',
+    );
+  }
+  return plato;
+}
+
+/**
+ * Qué recorte es qué pizza. Es lo único que hay que tocar para reordenar la
+ * galería, cambiar una foto o añadir otra.
+ *
+ * `pizza_4` se queda fuera a propósito: es una rebanada suelta, no una pizza
+ * entera, y en una fila de círculos canta. La Quattro Stagioni tampoco está
+ * aquí porque ya tiene su foto en el hero.
+ *
+ * `alto` es el del archivo (todos salen a 780 de ancho de `npm run assets:intro`).
+ * `giro` es el ladeo de la pieza: los recortes van pegados como en la cortina,
+ * no alineados a escuadra.
+ */
+const RECORTES = [
+  { archivo: 'pizza_1.webp', plato: 'Pizza Margarita', alto: 747, giro: -3.5 },
+  { archivo: 'pizza_5.webp', plato: 'Pizza Peperoni', alto: 887, giro: 2.5 },
+  { archivo: 'pizza_6.webp', plato: 'Pizza Boscaiola', alto: 779, giro: -2 },
+  { archivo: 'pizza_2.webp', plato: 'Pizza La Rojita', alto: 774, giro: 3 },
+  { archivo: 'pizza_3.webp', plato: 'Pizza Piña Sunset', alto: 793, giro: -2.5 },
+  { archivo: 'pizza_7.webp', plato: 'Pizza Ahumada Suprema', alto: 809, giro: 3.5 },
+].map(({ archivo, plato, alto, giro }) => ({
+  ...enLaCarta(plato),
+  src: `/assets_intro/derived/${archivo}`,
+  ancho: 780,
+  alto,
+  giro,
+}));
+
+/** Igual que en la carta: el escalonado se corta antes de hacerse esperar. */
+const RETARDO = 70; // ms entre pieza y pieza
+const RETARDO_MAXIMO = 280; // ms
+
+/**
+ * Desfase del vaivén entre pieza y pieza. Va en negativo (ver la hoja de
+ * estilo): cada pizza arranca su ciclo ya empezado, así que ninguna espera y
+ * las seis no se mueven a la vez como un tren. No es divisor del ciclo a
+ * propósito: si lo fuera, cada tres piezas volverían a coincidir.
+ */
+const FASE = 0.31; // s
+---
+
+<section class="galeria" id="galeria" aria-labelledby="galeria-titulo">
+  {/* La zona intocable es el ancho de la rejilla: las pegatinas rondan la tira
+      pero no llegan a solaparse con ninguna pizza ni con su precio. */}
+  <Estampas
+    alcance="ancho"
+    cuantas={4}
+    semilla={733}
+    zona="78rem"
+    ancho={[78, 132]}
+    logotipos={['pizza_9.webp', 'pizza_4.webp', 'pizza_8.webp']}
+  />
+
+  <div class="galeria__ancho">
+    <header class="galeria__cabecera">
+      {/* Mismo apaño que en la carta, y por lo mismo: el titular es lo único
+          que deja hueco a los lados cuando no hay márgenes. */}
+      <div class="galeria__portada">
+        <h2 class="galeria__titular" id="galeria-titulo" data-aparece>Del horno</h2>
+
+        <Estampas
+          alcance="estrecho"
+          cuantas={2}
+          semilla={628}
+          zona="100%"
+          tope="26vw"
+          ancho={[46, 68]}
+          franja={[-20, 0]}
+          respiro="0.6rem"
+          logotipos={['pizza_9.webp', 'pizza_4.webp']}
+        />
+      </div>
+      <p class="galeria__entradilla" data-aparece>
+        Seis de las nuestras, recién salidas.
+        {/* La pista del gesto solo tiene sentido mientras haya gesto: en
+            rejilla no se arrastra nada, así que el CSS la apaga. */}
+        <span class="galeria__pista" aria-hidden="true">Desliza para verlas →</span>
+      </p>
+    </header>
+  </div>
+
+  {/* El carrusel es una región que se recorre: con `tabindex` quien va por
+      teclado puede pararse en él y moverlo con las flechas, en vez de
+      encontrarse un trozo de página al que no llega. */}
+  <ul
+    class="galeria__tira"
+    role="list"
+    tabindex="0"
+    aria-label="Nuestras pizzas"
+  >
+    {
+      RECORTES.map(({ nombre, precio, src, ancho, alto, giro }, i) => (
+        <li
+          class="galeria__pizza"
+          data-aparece
+          style={`--retardo: ${Math.min(i * RETARDO, RETARDO_MAXIMO)}ms; --giro: ${giro}deg; --fase: -${(i * FASE).toFixed(2)}s`}
+        >
+          <img
+            class="galeria__recorte"
+            src={src}
+            alt={`${nombre}, entera y vista desde arriba.`}
+            width={ancho}
+            height={alto}
+            loading="lazy"
+            decoding="async"
+          />
+
+          <p class="galeria__nombre">
+            {/* El «Pizza » de la carta sobra en una galería de pizzas. */}
+            {nombre.replace(/^Pizza\s+/, '')}
+          </p>
+          {precio !== undefined && <p class="galeria__precio">{formatearPrecio(precio)}</p>}
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  /* ---------------------------------------------------------------------
+     Mandos de la galería. Todo lo que se retoca a ojo vive aquí.
+  --------------------------------------------------------------------- */
+  .galeria {
+    --ancho-util: 110rem; /* el mismo del hero, la barra y la carta */
+    --margen: clamp(1rem, 2.4vw, 2.75rem);
+
+    /* Ancho de cada pieza en el carrusel. Menos de una pantalla a propósito:
+       lo que asoma por la derecha es lo que cuenta que hay más pizzas. */
+    --pieza: min(66vw, 20rem);
+    --hueco: clamp(0.9rem, 4vw, 1.75rem);
+
+    /* El vaivén. La pizza no se mueve de su sitio: bascula sobre su propio
+       centro. `--vaiven` es cuánto se ladea hacia cada lado, y `--vaiven-ciclo`
+       lo que tarda en ir de un extremo al otro: entre los cuatro fotogramas se
+       lo reparten a partes iguales, así que cada uno dura la cuarta parte.
+       Pasando de unos ocho grados el balanceo deja de ser un guiño y se
+       convierte en un tumbo. */
+    --vaiven: 6deg;
+    --vaiven-ciclo: 1.4s;
+
+    --titular: clamp(2.25rem, 8vw, 5rem);
+    --entradilla: clamp(0.85rem, 1.1vw, 1.0625rem);
+    --nombre: clamp(0.9rem, 3.4vw, 1.1rem);
+    --menudo: clamp(0.75rem, 2.8vw, 0.9rem);
+
+    /* Ancla de las estampas. El `clip` recorta lo que asoma por los lados sin
+       crear un contenedor de scroll que se pelearía con el carrusel. */
+    position: relative;
+    overflow-x: clip;
+
+    background-color: var(--color-crema);
+    padding-block: clamp(3rem, 7vw, 5.5rem) clamp(3.5rem, 8vw, 6.5rem);
+    color: var(--color-tinta);
+  }
+
+  .galeria__ancho {
+    margin-inline: auto;
+    max-width: var(--ancho-util);
+    padding-inline: var(--margen);
+  }
+
+  .galeria__cabecera {
+    text-align: center;
+  }
+
+  .galeria__portada {
+    position: relative;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  .galeria__titular {
+    margin: 0;
+    color: var(--color-rojo);
+    font-size: var(--titular);
+    font-weight: 900;
+    line-height: 0.85;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+
+  .galeria__entradilla {
+    --retardo: 120ms;
+
+    margin: clamp(0.75rem, 2.5vw, 1.25rem) auto clamp(1.75rem, 5vw, 2.75rem);
+    max-width: 34rem;
+    color: color-mix(in srgb, var(--color-tinta) 78%, transparent);
+    font-size: var(--entradilla);
+    font-weight: 500;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .galeria__pista {
+    display: block;
+    margin-top: 0.35rem;
+    color: color-mix(in srgb, var(--color-tinta) 45%, transparent);
+    font-size: var(--menudo);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ------------------------------------------------------------- Carrusel */
+
+  /* La tira va a sangre —sin la caja de `--ancho-util`— para que las piezas
+     salgan por el borde de la pantalla en vez de morir en el margen. El aire
+     de los lados lo pone su propio `padding`, así que la primera pieza queda
+     alineada con el titular y la última no se pega al canto. */
+  .galeria__tira {
+    display: flex;
+    gap: var(--hueco);
+    margin: 0;
+    padding: 0 var(--margen);
+    list-style: none;
+
+    overflow-x: auto;
+    /* Que arrastrar la tira hasta el final no arrastre la página detrás. */
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    /* El freno del snap tiene que caer donde empieza el contenido, no en el
+       borde de la caja: si no, cada pieza se para medio margen corrida. */
+    scroll-padding-inline-start: var(--margen);
+
+    /* La barra de scroll sobra: el asomo de la pieza siguiente ya dice que
+       esto se mueve, y en el móvil no se ve de todos modos. */
+    scrollbar-width: none;
+  }
+
+  .galeria__tira::-webkit-scrollbar {
+    display: none;
+  }
+
+  .galeria__tira:focus-visible {
+    outline: 2px solid var(--color-rojo);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+
+  /* En carrusel la entrada es solo un fundido con un punto de escala: la pieza
+     que aún no se ha visto se revela mientras el dedo la arrastra de lado, y
+     una entrada que además sube se lee como un tropiezo. El desplazamiento
+     vuelve con la rejilla, donde todas entran quietas y a la vez. */
+  .galeria__pizza {
+    --entrada: scale(0.98);
+
+    flex: 0 0 var(--pieza);
+    scroll-snap-align: start;
+    text-align: center;
+  }
+
+  /* Caja cuadrada para todas: los recortes vienen con altos distintos, y sin
+     un marco común los nombres quedarían a alturas distintas. `contain` para
+     que ninguna pizza se recorte dentro de su cuadro. */
+  .galeria__recorte {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
+    /* Propiedad aparte y no `transform`: el revelado por scroll usa
+       `transform`, y el vaivén de aquí abajo también. Los tres se pisarían. */
+    rotate: var(--giro, 0deg);
+  }
+
+  /* ---------------------------------------------------------------------
+     El vaivén
+
+     Las pizzas no se van de su sitio: giran sobre su propio eje, ladeándose de
+     izquierda a derecha y vuelta. Y no lo hacen deslizándose, sino a saltos,
+     como una animación de cuatro fotogramas dibujada a mano. Eso lo hace
+     `steps(4, jump-none)`, que reparte el recorrido en cuatro posiciones
+     contando las dos puntas —sin `jump-none` la última no se llega a ver
+     nunca—, y `alternate`, que a la vuelta reproduce las mismas cuatro al
+     revés. En los extremos el fotograma se repite al cambiar de sentido, y ese
+     respiro es justo el que tiene una animación de verdad hecha a mano.
+
+     El giro va en `transform` y no en la propiedad `rotate` porque esa ya la
+     ocupa el ladeo de reposo de cada recorte. Las dos rotaciones comparten
+     centro y se suman, así que cada pizza bascula alrededor de su propia
+     inclinación en vez de enderezarse para moverse.
+  --------------------------------------------------------------------- */
+  @keyframes galeria-vaiven {
+    from {
+      transform: rotate(calc(var(--vaiven) * -1));
+    }
+    to {
+      transform: rotate(var(--vaiven));
+    }
+  }
+
+  /* Solo se mueve lo que ya ha entrado: mientras la pieza está por revelar no
+     hay nada que animar, y en el carrusel las que aún no se han deslizado
+     hasta la pantalla no gastan nada. */
+  .galeria__pizza[data-aparece='dentro'] .galeria__recorte {
+    animation: galeria-vaiven var(--vaiven-ciclo) steps(4, jump-none) var(--fase, 0s) infinite
+      alternate;
+  }
+
+  .galeria__nombre {
+    margin: clamp(0.5rem, 2vw, 0.85rem) 0 0;
+    font-size: var(--nombre);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .galeria__precio {
+    margin: 0.2rem 0 0;
+    color: var(--color-rojo);
+    font-size: var(--menudo);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  /* Mismo bote que en la carta, para que las dos cifras de la página se
+     comporten igual: sube, cae y rebota corto en cuanto la pieza se ha
+     revelado. Va en `transform`, que aquí está libre —el vaivén lo lleva el
+     recorte, no el precio—. */
+  @keyframes galeria-salto-precio {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    28% {
+      transform: translateY(-0.42em) scale(1.07);
+    }
+    52% {
+      transform: translateY(0) scale(0.97);
+    }
+    72% {
+      transform: translateY(-0.14em) scale(1.02);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .galeria__pizza[data-aparece='dentro'] .galeria__precio {
+    animation: galeria-salto-precio 760ms cubic-bezier(0.33, 0, 0.3, 1)
+      calc(var(--retardo, 0ms) + 460ms) both;
+  }
+
+  /* Quien pide menos movimiento no quiere precisamente un bucle infinito: las
+     pizzas se quedan quietas y centradas. */
+  @media (prefers-reduced-motion: reduce) {
+    .galeria__pizza[data-aparece='dentro'] .galeria__recorte,
+    .galeria__pizza[data-aparece='dentro'] .galeria__precio {
+      animation: none;
+    }
+  }
+
+  /* ---------------------------------------------------------------------
+     A partir del pliegue ya no hay gesto que valga: la tira se convierte en
+     rejilla, se apaga el arrastre y la galería vuelve a la caja común.
+  --------------------------------------------------------------------- */
+  @media (width >= 48rem) {
+    .galeria__pista {
+      display: none;
+    }
+
+    .galeria__tira {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      row-gap: clamp(1.5rem, 3vw, 2.75rem);
+      margin-inline: auto;
+      /* La rejilla no aprovecha el ancho útil entero: a 110rem cada pizza
+         pasaría de 30rem y esto dejaría de ser una galería para ser un mural.
+         Se queda en el ancho de lectura de la carta, que es el que hace que
+         tres círculos se lean como una fila. */
+      max-width: min(var(--ancho-util), 78rem);
+      overflow-x: visible;
+      scroll-snap-type: none;
+    }
+
+    .galeria__pizza {
+      --entrada: translateY(1.5rem) scale(0.97);
+    }
+  }
+</style>
