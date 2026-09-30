@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# documentos generados (la carta para imprenta: `npm run carta:pdf`)
+impresion/
